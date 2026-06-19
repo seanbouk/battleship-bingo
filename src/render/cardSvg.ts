@@ -76,8 +76,10 @@ function reconShip(ship: PlacedShip, x0: number, y0: number, cell: number): stri
     : `translate(${cx.toFixed(1)},${cy.toFixed(1)})`
   return (
     `<g transform="${transform}">` +
+    // No image-rendering:pixelated — the 5x sprite is downscaled on the card, so a
+    // smooth (anti-aliased) downscale looks far better than nearest-neighbour.
     `<image href="${sprite.uri}" x="${ix}" y="${iy}" width="${beam.toFixed(1)}" height="${len.toFixed(1)}" ` +
-    `preserveAspectRatio="none" style="image-rendering:pixelated"/></g>`
+    `preserveAspectRatio="none"/></g>`
   )
 }
 
@@ -179,7 +181,10 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
   const slotW = board / perRow
   const rowGap = 32
   const legendY = y0 + board + 22
-  parts.push('<g opacity="0.62">')
+  // Keep it muted on the night screen (where it was over-loud), but give it real
+  // contrast in day mode and on the printed card so the key is actually readable.
+  const legendOpacity = opts.mode === 'night' && !opts.print ? 0.7 : 0.9
+  parts.push(`<g opacity="${legendOpacity}">`)
   card.ships.forEach((ship, i) => {
     const color = pal.ship[ship.type.id] ?? pal.hullStroke
     const col = i % perRow

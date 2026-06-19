@@ -125,17 +125,23 @@ function darken(color: string, f: number): string {
 // identity but darken it to read on white.
 export function printPalette(style: Style, mode: Mode): Palette {
   const p = getPalette(style, mode)
-  if (mode === 'day') {
-    return { ...p, bg: '#ffffff', panel: '#ffffff' }
-  }
-  return {
-    ...p,
+  // Always a white page and neutral (uncoloured) grid — for both day and night.
+  const neutralGrid = {
     bg: '#ffffff',
     panel: '#ffffff',
-    water: '#f5f7f6',
-    gridLine: '#dadedb',
+    water: '#ffffff',
+    gridLine: '#dcdfdd',
     gridLineStrong: '#9aa49f',
     coordText: '#7b857f',
+  }
+  if (mode === 'day') {
+    // Day foregrounds are already dark; keep their hues, just whiten the page/grid.
+    return { ...p, ...neutralGrid }
+  }
+  // Night foregrounds are light-on-dark; keep each hue but darken to read on white.
+  return {
+    ...p,
+    ...neutralGrid,
     title: '#16221c',
     subtitle: '#5b665f',
     hullStroke: darken(p.hullStroke, 0.5),
