@@ -49,6 +49,14 @@ mean the app runs unchanged on localhost, a GitHub Pages project path, or a cust
 domain. Routing is via query params (`?card`, `?v=play`, `?v=call`), so no SPA
 fallback is needed on static hosting.
 
+## Not yet (post-v1)
+
+- **Prize tracker** — the caller adjudicates first-ship / first-of-each-type /
+  all-clear from the live per-card status; a panel that records *who claimed which
+  prize* is the planned next step.
+- **More mobile testing** — the interactive views are responsive but want real
+  device passes (phones in hand, various sizes) before leaning on them at an event.
+
 ## Stack & credits
 
 Vite + React + TypeScript. PDF via `jsPDF` + `svg2pdf.js` (cards render as SVG).
