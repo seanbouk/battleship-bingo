@@ -12,7 +12,7 @@ export interface RenderOptions {
 const PAD = 16
 const COORD = 18
 const HEADER = 46
-const LEGEND = 52
+const LEGEND = 76
 const INSET = 5
 
 const LETTERS = 'ABCDEFGHIJKLMNOP'
@@ -101,8 +101,17 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
   parts.push(
     `<text x="${PAD}" y="${PAD + 39}" fill="${pal.subtitle}" font-size="10.5" letter-spacing="0.5">first ship · each type · all clear</text>`,
   )
+  // code as a boxed, monospace ID chip — clearly a different thing from the title
+  const cFont = 15
+  const chipW = card.code.length * (cFont * 0.62 + 1.5) + 18
+  const chipH = 24
+  const chipX = W - PAD - chipW
+  const chipY = PAD + 3
   parts.push(
-    `<text x="${W - PAD}" y="${PAD + 30}" text-anchor="end" fill="${pal.title}" font-size="20" font-weight="700" letter-spacing="2">${card.code}</text>`,
+    `<rect x="${chipX.toFixed(1)}" y="${chipY}" width="${chipW.toFixed(1)}" height="${chipH}" rx="6" fill="none" stroke="${pal.gridLineStrong}" stroke-width="1.5"/>`,
+  )
+  parts.push(
+    `<text x="${(chipX + chipW / 2 + 1).toFixed(1)}" y="${(chipY + chipH / 2 + cFont * 0.35).toFixed(1)}" text-anchor="middle" fill="${pal.subtitle}" font-size="${cFont}" font-weight="600" letter-spacing="2">${card.code}</text>`,
   )
 
   // ---- board background + grid ----
@@ -148,23 +157,34 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
     }
   }
 
-  // ---- legend ----
-  const legendY = y0 + board + 20
-  const slot = board / card.ships.length
+  // ---- legend (key), laid out over two rows: 3 + 2 ----
+  // Deliberately low-contrast: it's a reference, not part of the play surface,
+  // so the whole group is dimmed and uses muted text to keep cards readable at a glance.
+  const perRow = 3
+  const slotW = board / perRow
+  const rowGap = 32
+  const legendY = y0 + board + 22
+  parts.push('<g opacity="0.62">')
   card.ships.forEach((ship, i) => {
     const color = pal.ship[ship.type.id] ?? pal.hullStroke
-    const cx = x0 + i * slot
-    parts.push(`<rect x="${cx.toFixed(1)}" y="${(legendY - 9).toFixed(1)}" width="14" height="10" rx="3" fill="${opts.style === 'sonar' ? pal.hullFill : color}" stroke="${color}" stroke-width="1.5"/>`)
+    const col = i % perRow
+    const row = Math.floor(i / perRow)
+    const bx = x0 + col * slotW
+    const by = legendY + row * rowGap
     parts.push(
-      `<text x="${(cx + 19).toFixed(1)}" y="${legendY}" fill="${pal.subtitle}" font-size="10.5" font-weight="600">${ship.type.name}</text>`,
+      `<rect x="${bx.toFixed(1)}" y="${(by - 8).toFixed(1)}" width="10" height="7" rx="2" fill="${color}"/>`,
+    )
+    parts.push(
+      `<text x="${(bx + 16).toFixed(1)}" y="${by.toFixed(1)}" fill="${pal.coordText}" font-size="9.5" font-weight="500">${ship.type.short}</text>`,
     )
     // length pips drawn as rects (not a glyph) so they survive PDF core fonts
     for (let p = 0; p < ship.type.length; p++) {
       parts.push(
-        `<rect x="${(cx + 19 + p * 7).toFixed(1)}" y="${(legendY + 5).toFixed(1)}" width="5" height="5" rx="1" fill="${color}"/>`,
+        `<rect x="${(bx + 16 + p * 6.5).toFixed(1)}" y="${(by + 5).toFixed(1)}" width="4.5" height="4.5" rx="1" fill="${color}"/>`,
       )
     }
   })
+  parts.push('</g>')
 
   parts.push('</svg>')
   return parts.join('')
