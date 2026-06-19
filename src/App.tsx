@@ -32,11 +32,11 @@ export default function App() {
         <p className="hint" style={{ marginTop: 28 }}>
           A preview of pack <strong>{seed}</strong>. Choose how many cards and how many per sheet
           when you download. Win order: <strong>first ship</strong> → <strong>first of each type</strong>{' '}
-          → <strong>all clear</strong>. Recon ship insignia by Cathelineau &amp; Delapouite via{' '}
-          <a href="https://game-icons.net" target="_blank" rel="noreferrer">
-            game-icons.net
+          → <strong>all clear</strong>. Recon ship sprites:{' '}
+          <a href="https://opengameart.org/content/sea-warfare-set-ships-and-more" target="_blank" rel="noreferrer">
+            “Sea Warfare Set” by Lowder2
           </a>{' '}
-          (CC BY 3.0).
+          (CC0).
         </p>
       </main>
       {dialogOpen && <DownloadDialog seed={seed} onClose={() => setDialogOpen(false)} />}
