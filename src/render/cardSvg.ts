@@ -1,6 +1,7 @@
 import { Card, PlacedShip } from '../engine/card'
 import { Style, Mode } from '../settings/SettingsContext'
 import { getPalette, Palette } from './palette'
+import { SHIP_ART } from './shipArt'
 
 export interface RenderOptions {
   style: Style
@@ -51,32 +52,55 @@ function sonarHull(ship: PlacedShip, x0: number, y0: number, cell: number, color
   return s
 }
 
+// Recon: a solid colored hull (capsule with a pointed bow) that fills the
+// footprint, with the game-icons ship plan as a darker deck insignia centred on
+// it. The hull conveys length; the insignia conveys type.
 function reconHull(ship: PlacedShip, x0: number, y0: number, cell: number, color: string): string {
   const b = bbox(ship)
   const left = x0 + b.minC * cell + INSET
   const right = x0 + (b.maxC + 1) * cell - INSET
   const top = y0 + b.minR * cell + INSET
   const bot = y0 + (b.maxR + 1) * cell - INSET
-  const bow = cell * 0.5
-  let pts: string
-  if (ship.orientation === 'h') {
+  const horiz = ship.orientation === 'h'
+  const rr = cell * 0.24
+  const bow = cell * 0.55
+
+  let hull: string
+  if (horiz) {
     const midY = (top + bot) / 2
-    pts = `${left},${top} ${right - bow},${top} ${right},${midY} ${right - bow},${bot} ${left},${bot}`
+    hull =
+      `M${(left + rr).toFixed(1)},${top.toFixed(1)} L${(right - bow).toFixed(1)},${top.toFixed(1)} ` +
+      `L${right.toFixed(1)},${midY.toFixed(1)} L${(right - bow).toFixed(1)},${bot.toFixed(1)} ` +
+      `L${(left + rr).toFixed(1)},${bot.toFixed(1)} Q${left.toFixed(1)},${bot.toFixed(1)} ${left.toFixed(1)},${(bot - rr).toFixed(1)} ` +
+      `L${left.toFixed(1)},${(top + rr).toFixed(1)} Q${left.toFixed(1)},${top.toFixed(1)} ${(left + rr).toFixed(1)},${top.toFixed(1)} Z`
   } else {
     const midX = (left + right) / 2
-    pts = `${left},${bot} ${left},${top + bow} ${midX},${top} ${right},${top + bow} ${right},${bot}`
+    hull =
+      `M${left.toFixed(1)},${(bot - rr).toFixed(1)} Q${left.toFixed(1)},${bot.toFixed(1)} ${(left + rr).toFixed(1)},${bot.toFixed(1)} ` +
+      `L${(right - rr).toFixed(1)},${bot.toFixed(1)} Q${right.toFixed(1)},${bot.toFixed(1)} ${right.toFixed(1)},${(bot - rr).toFixed(1)} ` +
+      `L${right.toFixed(1)},${(top + bow).toFixed(1)} L${midX.toFixed(1)},${top.toFixed(1)} L${left.toFixed(1)},${(top + bow).toFixed(1)} Z`
   }
-  const fmt = pts
-    .split(' ')
-    .map((p) => p.split(',').map((v) => Number(v).toFixed(1)).join(','))
-    .join(' ')
-  // hull body + a lighter deck line for a touch of detail
-  return (
-    `<polygon points="${fmt}" fill="${color}" stroke="rgba(0,0,0,0.45)" stroke-width="1.5" stroke-linejoin="round"/>` +
-    (ship.orientation === 'h'
-      ? `<line x1="${(left + 4).toFixed(1)}" y1="${((top + bot) / 2).toFixed(1)}" x2="${(right - bow).toFixed(1)}" y2="${((top + bot) / 2).toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>`
-      : `<line x1="${((left + right) / 2).toFixed(1)}" y1="${(bot - 4).toFixed(1)}" x2="${((left + right) / 2).toFixed(1)}" y2="${(top + bow).toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>`)
-  )
+
+  let out = `<path d="${hull}" fill="${color}" stroke="rgba(0,0,0,0.45)" stroke-width="1.4" stroke-linejoin="round"/>`
+
+  const art = SHIP_ART[ship.type.id]
+  if (art) {
+    const cx = (left + right) / 2
+    const cy = (top + bot) / 2
+    // rotate so the icon's bow-stern axis runs along the footprint's long axis
+    const deg = art.axis === 'h' ? (horiz ? 0 : 90) : horiz ? 90 : 0
+    const rotated = deg === 90
+    const onW = rotated ? art.bbox[3] - art.bbox[1] : art.bbox[2] - art.bbox[0]
+    const onH = rotated ? art.bbox[2] - art.bbox[0] : art.bbox[3] - art.bbox[1]
+    const box = cell * 0.86
+    const sc = Math.min(box / onW, box / onH)
+    const bcx = (art.bbox[0] + art.bbox[2]) / 2
+    const bcy = (art.bbox[1] + art.bbox[3]) / 2
+    out +=
+      `<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)}) rotate(${deg}) scale(${sc.toFixed(4)}) ` +
+      `translate(${(-bcx).toFixed(1)},${(-bcy).toFixed(1)})" fill="rgba(0,0,0,0.34)"><path d="${art.d}"/></g>`
+  }
+  return out
 }
 
 export function cardToSvg(card: Card, opts: RenderOptions): string {
@@ -144,13 +168,20 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
     const color = pal.ship[ship.type.id] ?? pal.hullStroke
     parts.push(opts.style === 'sonar' ? sonarHull(ship, x0, y0, cell, color, pal) : reconHull(ship, x0, y0, cell, color))
   }
-  // ---- numbers (drawn last so they sit on top of hulls) ----
+  // ---- numbers (drawn last so they sit on top of hulls/insignia) ----
+  // Sonar: clean colored numerals. Recon: white numerals on a dark disc so they
+  // stay legible over the illustrated hull and deck insignia.
   for (const ship of card.ships) {
     const color = pal.ship[ship.type.id] ?? pal.hullStroke
-    const numColor = opts.style === 'sonar' ? color : pal.numberText
     for (const c of ship.cells) {
       const cx = x0 + (c.c + 0.5) * cell
       const cy = y0 + (c.r + 0.5) * cell
+      if (opts.style === 'recon') {
+        parts.push(
+          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(cell * 0.3).toFixed(1)}" fill="rgba(0,0,0,0.5)"/>`,
+        )
+      }
+      const numColor = opts.style === 'sonar' ? color : '#ffffff'
       parts.push(
         `<text x="${cx.toFixed(1)}" y="${(cy + cell * 0.15).toFixed(1)}" text-anchor="middle" fill="${numColor}" font-size="${(cell * 0.42).toFixed(1)}" font-weight="700">${c.n}</text>`,
       )

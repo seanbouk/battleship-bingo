@@ -32,7 +32,7 @@ export default function App() {
         <p className="hint" style={{ marginTop: 28 }}>
           A preview of pack <strong>{seed}</strong>. Choose how many cards and how many per sheet
           when you download. Win order: <strong>first ship</strong> → <strong>first of each type</strong>{' '}
-          → <strong>all clear</strong>. Ship icons (Recon) will use{' '}
+          → <strong>all clear</strong>. Recon ship insignia by Cathelineau &amp; Delapouite via{' '}
           <a href="https://game-icons.net" target="_blank" rel="noreferrer">
             game-icons.net
           </a>{' '}
