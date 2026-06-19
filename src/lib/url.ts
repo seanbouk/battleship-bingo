@@ -10,9 +10,3 @@ export function appBaseUrl(): string {
   const dir = pathname.replace(/[^/]*$/, '')
   return origin + dir
 }
-
-/** A link that opens a specific card by its code (Phase 2 will consume ?card=). */
-export function cardLink(code: string): string {
-  const base = appBaseUrl()
-  return `${base}?card=${encodeURIComponent(code)}`
-}

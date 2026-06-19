@@ -11,7 +11,17 @@ export function randomCardCode(): string {
   return encodeCode(Math.floor(Math.random() * 0xffffffff))
 }
 
-/** Codes seed the card generator directly, so they must be normalised (upper). */
+/**
+ * Codes seed the card generator directly, so they must be normalised. Codes get
+ * read aloud, so fold the easily-confused characters the way Crockford base32
+ * does (O→0, I/L→1) and drop spaces/hyphens. Generated codes never contain
+ * O/I/L/U, so this only ever repairs mishearings — it can't corrupt a good code.
+ */
 export function normalizeCode(code: string): string {
-  return code.trim().toUpperCase()
+  return code
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, '')
+    .replace(/O/g, '0')
+    .replace(/[IL]/g, '1')
+    .replace(/U/g, 'V')
 }
