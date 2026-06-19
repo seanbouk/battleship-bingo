@@ -60,6 +60,7 @@ body {
   align-items: center;
   gap: 22px;
 }
+.brand-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .brand {
   appearance: none;
   background: transparent;
@@ -73,6 +74,8 @@ body {
   cursor: pointer;
   padding: 0;
 }
+.crumb { color: var(--muted); font-weight: 700; font-size: 15px; letter-spacing: 0.5px; white-space: nowrap; }
+.playlink { white-space: nowrap; }
 .topbar .spacer { flex: 1; }
 
 .topbar-mid { display: flex; align-items: center; gap: 12px; }
@@ -379,8 +382,8 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 /* off-screen sink cue: a glow rising from the bottom edge toward the card's column */
 .down-alert {
   position: fixed; bottom: 0; transform: translateX(-50%);
-  width: 340px; max-width: 80vw; height: 150px; z-index: 45; cursor: pointer;
-  background: radial-gradient(150px 140px at 50% 135%, var(--accent), transparent 72%);
+  width: 340px; max-width: 92vw; height: 150px; z-index: 45; cursor: pointer;
+  background: radial-gradient(70% 150px at 50% 135%, var(--accent), transparent 72%);
   animation: downAlertPulse 0.9s ease-in-out infinite;
 }
 @keyframes downAlertPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.85; } }
