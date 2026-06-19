@@ -10,7 +10,7 @@ export default function TopBar({ middle }: { middle?: ReactNode }) {
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <button className="brand" onClick={() => go('home')} title="Home">
+        <button className="brand" onPointerDown={() => go('home')} title="Home">
           ⚓ BATTLESHIP BINGO
         </button>
 
@@ -21,14 +21,14 @@ export default function TopBar({ middle }: { middle?: ReactNode }) {
         <div className="seg-group">
           <div className="seg" role="group" aria-label="Card style">
             {(['sonar', 'recon'] as Style[]).map((s) => (
-              <button key={s} aria-pressed={style === s} onClick={() => setStyle(s)}>
+              <button key={s} aria-pressed={style === s} onPointerDown={() => setStyle(s)}>
                 {s === 'sonar' ? 'Sonar' : 'Recon'}
               </button>
             ))}
           </div>
           <div className="seg" role="group" aria-label="Day or night">
             {(['day', 'night'] as Mode[]).map((m) => (
-              <button key={m} aria-pressed={mode === m} onClick={() => setMode(m)}>
+              <button key={m} aria-pressed={mode === m} onPointerDown={() => setMode(m)}>
                 {m === 'day' ? 'Day' : 'Night'}
               </button>
             ))}

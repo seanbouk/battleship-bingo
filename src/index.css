@@ -312,18 +312,18 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 /* "you sank my ___" toast: rises from the bottom, bounces in, pauses ~halfway,
    eases off the top. No background. */
 @keyframes sinkToast {
-  0%   { transform: translate(-50%, 42vh) scale(.5); opacity: 0; }
-  12%  { transform: translate(-50%, 20vh) scale(1.18); opacity: 1; }
-  20%  { transform: translate(-50%, 24vh) scale(1); }
-  46%  { transform: translate(-50%, 22vh) scale(1); opacity: 1; }
-  60%  { transform: translate(-50%, 14vh) scale(1); opacity: 1; }
-  100% { transform: translate(-50%, -42vh) scale(1.02); opacity: 0; }
+  0%   { transform: translate(-50%, 104vh) scale(.85); opacity: 0; }       /* just below the fold */
+  5%   { opacity: 1; }
+  15%  { transform: translate(-50%, 34vh) scale(1.12); opacity: 1; }       /* overshoot up */
+  22%  { transform: translate(-50%, 40vh) scale(1); }                      /* settle = bounce out */
+  70%  { transform: translate(-50%, 40vh) scale(1); opacity: 1; }          /* hold ~half-board */
+  100% { transform: translate(-50%, -34vh) scale(1.02); opacity: 0; }      /* ease off the top */
 }
 .sink-toast {
-  position: fixed; left: 50%; bottom: 0; z-index: 100; pointer-events: none;
-  font-size: clamp(28px, 6vw, 56px); font-weight: 800; color: var(--accent);
+  position: fixed; left: 50%; top: 0; z-index: 100; pointer-events: none;
+  font-size: clamp(30px, 6.5vw, 60px); font-weight: 800; color: var(--accent);
   text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45); white-space: nowrap;
-  animation: sinkToast 2.8s cubic-bezier(0.2, 0.75, 0.3, 1) forwards;
+  animation: sinkToast 3.4s ease-out forwards;
 }
 
 /* caller tracked-card history */
@@ -334,26 +334,31 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
   border-radius: 8px; padding: 9px 10px; font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 15px; letter-spacing: 2px; text-transform: uppercase;
 }
-.tracked-list { display: flex; flex-direction: column; gap: 12px; }
-.tracked { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--panel-2); }
+.tracked-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+.tracked { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--panel-2); }
 .tracked.new { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); animation: flashNew 1.6s ease; }
-@keyframes flashNew { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 2px var(--accent); } }
-.tracked-head { display: flex; align-items: center; gap: 10px; }
-.tracked-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
-.tracked-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; }
-.tracked-new-tag { font-size: 10px; font-weight: 700; color: var(--bg); background: var(--accent); border-radius: 5px; padding: 2px 6px; text-transform: uppercase; }
+@keyframes flashNew { 0% { box-shadow: 0 0 0 5px var(--accent); } 100% { box-shadow: 0 0 0 2px var(--accent); } }
+.tracked-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tracked-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 17px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
+.tracked-tag { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+.tracked-new-tag { font-size: 9px; font-weight: 700; color: var(--bg); background: var(--accent); border-radius: 5px; padding: 1px 5px; text-transform: uppercase; }
 .tracked-head .grow { flex: 1; }
-.tracked-name { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 6px 9px; font-size: 13px; margin: 8px 0; width: 100%; }
-.tracked-toggles { display: flex; gap: 6px; }
-.icon-btn.sm { font-size: 13px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; }
-.tracked-expand { margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; }
+.tracked-name { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 5px 8px; font-size: 12px; margin: 7px 0; width: 100%; }
+.tracked-toggles { display: flex; gap: 5px; margin-top: 6px; }
+.icon-btn.sm { font-size: 12px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; }
+.tracked-expand { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .tracked-qr { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.tracked .badge { font-size: 11px; padding: 3px 8px; }
+.tracked .ship-status.compact li { font-size: 11px; padding: 3px 6px; }
 
 .games-list { display: flex; flex-direction: column; gap: 8px; }
 .game-row { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; }
 .game-row .grow { flex: 1; color: var(--muted); }
 
+@media (max-width: 1000px) {
+  .tracked-list { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 760px) {
-  .roles, .player-grid, .caller-cols, .handout, .call-panel, .verify-result, .tracked-expand { grid-template-columns: 1fr; }
+  .roles, .player-grid, .caller-cols, .handout, .call-panel, .verify-result, .tracked-list { grid-template-columns: 1fr; }
   .called-board { grid-template-columns: repeat(10, 1fr); }
 }

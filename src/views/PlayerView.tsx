@@ -42,32 +42,23 @@ export default function PlayerView({ code }: { code: string }) {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  // "You sank my ___" toast on each newly-sunk ship.
-  const prevSunk = useRef(new Set(status.sunkTypes))
+  // "You sank my ___" toast, fired the instant the last marker lands.
   const toastSeq = useRef(0)
   const [toast, setToast] = useState<{ key: number; text: string } | null>(null)
-  const sunkKey = status.sunkTypes.join(',')
-  useEffect(() => {
-    const now = new Set(status.sunkTypes)
-    for (const id of now) {
-      if (!prevSunk.current.has(id)) {
-        const ship = card.ships.find((s) => s.type.id === id)
-        if (ship) {
-          toastSeq.current += 1
-          setToast({ key: toastSeq.current, text: `You sank my ${ship.type.name}!` })
-        }
-      }
-    }
-    prevSunk.current = now
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sunkKey])
 
   function toggle(n: number) {
-    setMarked((prev) => {
-      const next = new Set(prev)
-      next.has(n) ? next.delete(n) : next.add(n)
-      return next
-    })
+    const next = new Set(marked)
+    next.has(n) ? next.delete(n) : next.add(n)
+    // detect a ship that just became fully sunk by this tap
+    const newly = evaluateCard(card, next).sunkTypes.filter((id) => !status.sunkTypes.includes(id))
+    if (newly.length) {
+      const ship = card.ships.find((s) => s.type.id === newly[0])
+      if (ship) {
+        toastSeq.current += 1
+        setToast({ key: toastSeq.current, text: `You sank my ${ship.type.name}!` })
+      }
+    }
+    setMarked(next)
   }
 
   function clearMarks() {
@@ -147,17 +138,17 @@ export default function PlayerView({ code }: { code: string }) {
             </ul>
 
             <div className="player-actions">
-              <button className="ghost" onClick={clearMarks}>
+              <button className="ghost" onPointerDown={clearMarks}>
                 🧹 Clear marks
               </button>
-              <button className="ghost" onClick={() => go('card', randomCardCode())}>
+              <button className="ghost" onPointerDown={() => go('card', randomCardCode())}>
                 🎲 Random card
               </button>
             </div>
 
             <div className="share-block">
               <Qr text={hrefFor('card', code)} />
-              <button className="ghost" onClick={share}>
+              <button className="ghost" onPointerDown={share}>
                 {copied ? '✅ Link copied!' : '🔗 Copy link to this card'}
               </button>
             </div>

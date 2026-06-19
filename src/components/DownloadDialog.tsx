@@ -90,10 +90,10 @@ export default function DownloadDialog({ seed, onClose }: Props) {
         </p>
 
         <div className="dialog-actions">
-          <button className="ghost" onClick={onClose} disabled={busy}>
+          <button className="ghost" onPointerDown={onClose} disabled={busy}>
             Cancel
           </button>
-          <button className="action" onClick={onGenerate} disabled={busy}>
+          <button className="action" onPointerDown={onGenerate} disabled={busy}>
             {busy ? 'Building PDF…' : 'Download'}
           </button>
         </div>

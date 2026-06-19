@@ -70,6 +70,7 @@ export default function CallerView() {
   const [games, setGames] = useState<Archived[]>(loadGames)
   const [lastAdded, setLastAdded] = useState<string | null>(null)
   const [verifyInput, setVerifyInput] = useState('')
+  const [showOpenTable, setShowOpenTable] = useState(false)
 
   useEffect(() => {
     localStorage.setItem(GAME_KEY, JSON.stringify(game))
@@ -94,14 +95,20 @@ export default function CallerView() {
   function undo() {
     setGame((g) => ({ ...g, drawCount: Math.max(0, g.drawCount - 1) }))
   }
+  // Only worth saving a game that actually got going.
+  const worthSaving = (g: Game) => g.drawCount > 0 || g.cards.length > 0
+
   function newGame() {
     if (!confirm('Start a new game? The current game is saved under Previous games.')) return
-    setGames((prev) => [{ game, endedAt: Date.now() }, ...prev].slice(0, 20))
+    setGames((prev) => (worthSaving(game) ? [{ game, endedAt: Date.now() }, ...prev] : prev).slice(0, 20))
     setGame(freshGame())
     setLastAdded(null)
   }
   function restore(a: Archived) {
-    setGames((prev) => [{ game, endedAt: Date.now() }, ...prev.filter((x) => x !== a)].slice(0, 20))
+    setGames((prev) => {
+      const rest = prev.filter((x) => x !== a)
+      return (worthSaving(game) ? [{ game, endedAt: Date.now() }, ...rest] : rest).slice(0, 20)
+    })
     setGame(a.game)
   }
 
@@ -146,13 +153,13 @@ export default function CallerView() {
               </div>
             </div>
             <div className="call-buttons">
-              <button className="action big" onClick={callNext} disabled={game.drawCount >= DEFAULT_POOL}>
+              <button className="action big" onPointerDown={callNext} disabled={game.drawCount >= DEFAULT_POOL}>
                 📣 Call number
               </button>
-              <button className="ghost" onClick={undo} disabled={!game.drawCount}>
+              <button className="ghost" onPointerDown={undo} disabled={!game.drawCount}>
                 ↩️ Undo
               </button>
-              <button className="ghost" onClick={newGame}>
+              <button className="ghost" onPointerDown={newGame}>
                 🆕 New game
               </button>
             </div>
@@ -167,19 +174,13 @@ export default function CallerView() {
         </section>
 
         <section className="panel">
-          <h2 className="section-h">Open table</h2>
-          <p className="hint">Anyone scans this and gets a random card to play.</p>
-          <div className="handout-half">
-            <Qr text={hrefFor('play')} />
-            <code className="link">{hrefFor('play')}</code>
-          </div>
-        </section>
-
-        <section className="panel">
           <h2 className="section-h">Tracked cards</h2>
           <div className="track-controls">
-            <button className="action" onClick={issueCard}>
+            <button className="action" onPointerDown={issueCard}>
               🎟️ Issue a card
+            </button>
+            <button className="ghost" onPointerDown={() => setShowOpenTable(true)}>
+              📺 Open table
             </button>
             <div className="track-add">
               <input
@@ -189,7 +190,7 @@ export default function CallerView() {
                 onKeyDown={(e) => e.key === 'Enter' && checkCard()}
                 spellCheck={false}
               />
-              <button className="ghost" onClick={checkCard}>
+              <button className="ghost" onPointerDown={checkCard}>
                 ➕ Check
               </button>
             </div>
@@ -232,7 +233,7 @@ export default function CallerView() {
                   <span className="grow">
                     {a.game.drawCount} called · {a.game.cards.length} cards
                   </span>
-                  <button className="ghost" onClick={() => restore(a)}>
+                  <button className="ghost" onPointerDown={() => restore(a)}>
                     ♻️ Restore
                   </button>
                 </div>
@@ -241,6 +242,27 @@ export default function CallerView() {
           </section>
         )}
       </main>
+
+      {showOpenTable && (
+        <div
+          className="overlay"
+          onPointerDown={(e) => e.target === e.currentTarget && setShowOpenTable(false)}
+        >
+          <div className="dialog" role="dialog" aria-modal="true" aria-label="Open table">
+            <h2>Open table</h2>
+            <p className="dialog-sub">Anyone scans this and gets a random card to play.</p>
+            <div className="share-block">
+              <Qr text={hrefFor('play')} />
+              <code className="link">{hrefFor('play')}</code>
+            </div>
+            <div className="dialog-actions">
+              <button className="action" onPointerDown={() => setShowOpenTable(false)}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

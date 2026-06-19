@@ -48,13 +48,13 @@ export default function TrackedCardRow({
           <span className="badge">none yet</span>
         )}
         <div className="tracked-toggles">
-          <button className="icon-btn sm" title="View card" onClick={() => setShowCard((v) => !v)}>
+          <button className="icon-btn sm" title="View card" onPointerDown={() => setShowCard((v) => !v)}>
             👁
           </button>
-          <button className="icon-btn sm" title="Show QR / link" onClick={() => setShowQr((v) => !v)}>
+          <button className="icon-btn sm" title="Show QR / link" onPointerDown={() => setShowQr((v) => !v)}>
             🔗
           </button>
-          <button className="icon-btn sm" title="Remove" onClick={onRemove}>
+          <button className="icon-btn sm" title="Remove" onPointerDown={onRemove}>
             ✖️
           </button>
         </div>

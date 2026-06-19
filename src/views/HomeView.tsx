@@ -23,11 +23,11 @@ export default function HomeView() {
           onChange={(e) => setSeed(e.target.value.toUpperCase())}
           spellCheck={false}
         />
-        <button className="icon-btn" title="New random pack" onClick={() => setSeed(randomSeed())}>
+        <button className="icon-btn" title="New random pack" onPointerDown={() => setSeed(randomSeed())}>
           🎲
         </button>
       </div>
-      <button className="action" onClick={() => setDialogOpen(true)}>
+      <button className="action" onPointerDown={() => setDialogOpen(true)}>
         Download PDF
       </button>
     </>
@@ -38,12 +38,12 @@ export default function HomeView() {
       <TopBar middle={middle} />
       <main>
         <div className="roles">
-          <button className="role-card" onClick={() => go('call')}>
+          <button className="role-card" onPointerDown={() => go('call')}>
             <span className="role-emoji">📣</span>
             <span className="role-title">Run a game</span>
             <span className="role-sub">Call numbers, hand out cards, check claims</span>
           </button>
-          <button className="role-card" onClick={() => go('play')}>
+          <button className="role-card" onPointerDown={() => go('play')}>
             <span className="role-emoji">🎯</span>
             <span className="role-title">Play</span>
             <span className="role-sub">Grab a card and daub as numbers are called</span>

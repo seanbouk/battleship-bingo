@@ -35,7 +35,7 @@ export default function PlayableCard({ card, marked, status, onToggle, readOnly 
             <g
               key={`${cell.r},${cell.c}`}
               className={readOnly ? undefined : 'hot'}
-              onClick={readOnly ? undefined : () => onToggle?.(cell.n)}
+              onPointerDown={readOnly ? undefined : () => onToggle?.(cell.n)}
             >
               {isMarked && (
                 <circle
