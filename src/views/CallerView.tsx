@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import TopBar from '../components/TopBar'
 import TrackedCardRow from '../components/TrackedCardRow'
 import Qr from '../components/Qr'
@@ -8,7 +8,7 @@ import { evaluateCard } from '../engine/win'
 import { cardCodeFor, makeRng } from '../engine/rng'
 import { DEFAULT_POOL } from '../engine/fleet'
 import { hrefFor } from '../lib/route'
-import { randomSeed, normalizeCode } from '../lib/seed'
+import { randomSeed, randomCardCode, normalizeCode } from '../lib/seed'
 
 interface TrackedCard {
   code: string
@@ -71,7 +71,9 @@ export default function CallerView() {
   const [games, setGames] = useState<Archived[]>(loadGames)
   const [lastAdded, setLastAdded] = useState<string | null>(null)
   const [verifyInput, setVerifyInput] = useState('')
-  const [showOpenTable, setShowOpenTable] = useState(false)
+  const [linkCode, setLinkCode] = useState<string | null>(null)
+  const [alertX, setAlertX] = useState<number | null>(null)
+  const alertTarget = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     localStorage.setItem(GAME_KEY, JSON.stringify(game))
@@ -138,6 +140,40 @@ export default function CallerView() {
     setGame((g) => ({ ...g, cards: g.cards.map((c) => (c.code === code ? { ...c, name } : c)) }))
   }
 
+  // Pick the card NOW (so it's a known card we can track), not when the player
+  // arrives. On close, the card joins the tracked list.
+  function openGetLink() {
+    setLinkCode(randomCardCode())
+  }
+  function closeGetLink() {
+    if (linkCode) addCard(linkCode, 'issued')
+    setLinkCode(null)
+  }
+
+  // FPS-style "you got hit from over there" cue: if a pulsing (just-sank) card is
+  // below the fold, glow at the bottom of the screen toward its column.
+  useEffect(() => {
+    function check() {
+      const els = Array.from(document.querySelectorAll('.tracked.sank')) as HTMLElement[]
+      const offscreen = els.find((el) => el.getBoundingClientRect().top > window.innerHeight - 48)
+      if (offscreen) {
+        const r = offscreen.getBoundingClientRect()
+        alertTarget.current = offscreen
+        setAlertX(r.left + r.width / 2)
+      } else {
+        alertTarget.current = null
+        setAlertX(null)
+      }
+    }
+    check()
+    window.addEventListener('scroll', check, { passive: true })
+    window.addEventListener('resize', check)
+    return () => {
+      window.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [game.drawCount, game.cards.length])
+
   return (
     <>
       <TopBar />
@@ -180,7 +216,7 @@ export default function CallerView() {
             <button className="action" onPointerDown={issueCard}>
               🎟️ Issue a card
             </button>
-            <button className="ghost" onPointerDown={() => setShowOpenTable(true)}>
+            <button className="ghost" onPointerDown={openGetLink}>
               🔗 Get link
             </button>
             <div className="track-add">
@@ -252,26 +288,35 @@ export default function CallerView() {
         )}
       </main>
 
-      {showOpenTable && (
-        <div
-          className="overlay"
-          onPointerDown={(e) => e.target === e.currentTarget && setShowOpenTable(false)}
-        >
+      {linkCode && (
+        <div className="overlay" onPointerDown={(e) => e.target === e.currentTarget && closeGetLink()}>
           <div className="dialog" role="dialog" aria-modal="true" aria-label="Player link">
-            <h2>Player link</h2>
-            <p className="dialog-sub">Anyone who opens this gets a random card to play.</p>
+            <h2>
+              Card <span className="tracked-code">{linkCode}</span>
+            </h2>
+            <p className="dialog-sub">
+              Show this to a player — they get this exact card. It's added to your tracked cards when you close.
+            </p>
             <div className="share-block">
-              <Qr text={hrefFor('play')} />
-              <code className="link">{hrefFor('play')}</code>
-              <CopyButton text={hrefFor('play')} label="Copy player link" />
+              <Qr text={hrefFor('card', linkCode)} />
+              <code className="link">{hrefFor('card', linkCode)}</code>
+              <CopyButton text={hrefFor('card', linkCode)} />
             </div>
             <div className="dialog-actions">
-              <button className="action" onPointerDown={() => setShowOpenTable(false)}>
+              <button className="action" onPointerDown={closeGetLink}>
                 Done
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {alertX !== null && (
+        <div
+          className="down-alert"
+          style={{ left: alertX }}
+          onPointerDown={() => alertTarget.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        />
       )}
     </>
   )

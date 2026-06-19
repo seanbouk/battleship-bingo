@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import TopBar from '../components/TopBar'
 import PlayableCard from '../components/PlayableCard'
 import Qr from '../components/Qr'
+import CopyButton from '../components/CopyButton'
 import { generateCard } from '../engine/card'
 import { evaluateCard } from '../engine/win'
 import { hrefFor, go } from '../lib/route'
@@ -21,7 +22,6 @@ export default function PlayerView({ code }: { code: string }) {
   const card = generateCard(code)
   const storeKey = `bb.daub.${code}`
   const [marked, setMarked] = useState<Set<number>>(() => loadDaubs(storeKey))
-  const [copied, setCopied] = useState(false)
   const [codeInput, setCodeInput] = useState(code)
 
   const status = evaluateCard(card, marked)
@@ -74,16 +74,6 @@ export default function PlayerView({ code }: { code: string }) {
     const c = normalizeCode(codeInput)
     if (c.length >= 4 && c !== card.code) go('card', c)
     else setCodeInput(card.code)
-  }
-
-  function share() {
-    navigator.clipboard?.writeText(hrefFor('card', code)).then(
-      () => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
-      },
-      () => {},
-    )
   }
 
   return (
@@ -148,9 +138,7 @@ export default function PlayerView({ code }: { code: string }) {
 
             <div className="share-block">
               <Qr text={hrefFor('card', code)} />
-              <button className="ghost" onPointerDown={share}>
-                {copied ? '✅ Link copied!' : '🔗 Copy link to this card'}
-              </button>
+              <CopyButton text={hrefFor('card', code)} label="Copy link to this card" />
             </div>
           </aside>
         </div>

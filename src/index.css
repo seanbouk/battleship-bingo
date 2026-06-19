@@ -373,6 +373,18 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 .game-row { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; }
 .game-row .grow { flex: 1; color: var(--muted); }
 
+/* section headers sit tight to the top of their panel */
+.panel .section-h:first-child { margin-top: 0; }
+
+/* off-screen sink cue: a glow rising from the bottom edge toward the card's column */
+.down-alert {
+  position: fixed; bottom: 0; transform: translateX(-50%);
+  width: 340px; max-width: 80vw; height: 150px; z-index: 45; cursor: pointer;
+  background: radial-gradient(150px 140px at 50% 135%, var(--accent), transparent 72%);
+  animation: downAlertPulse 0.9s ease-in-out infinite;
+}
+@keyframes downAlertPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.85; } }
+
 @media (max-width: 1000px) {
   .tracked-list { grid-template-columns: repeat(2, 1fr); }
 }
