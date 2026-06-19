@@ -295,7 +295,65 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 .badge { align-self: flex-start; padding: 6px 12px; border-radius: 8px; background: var(--panel-2); font-weight: 700; font-size: 13px; }
 .badge.win { background: var(--accent); color: var(--bg); }
 
+/* clicking fast on cells shouldn't select page text */
+.play-card, .play-overlay, .called-board, .brand, button, .seg { user-select: none; -webkit-user-select: none; }
+.recent { min-height: 20px; }
+
+/* editable card code on the player screen */
+.code-edit {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 38px; font-weight: 800; letter-spacing: 4px; text-align: center;
+  width: 100%; max-width: 240px; text-transform: uppercase;
+  background: transparent; border: none; border-bottom: 2px dashed var(--border);
+  color: var(--accent); padding: 2px 0;
+}
+.code-edit:focus { outline: none; border-bottom-color: var(--accent); }
+
+/* "you sank my ___" toast: rises from the bottom, bounces in, pauses ~halfway,
+   eases off the top. No background. */
+@keyframes sinkToast {
+  0%   { transform: translate(-50%, 42vh) scale(.5); opacity: 0; }
+  12%  { transform: translate(-50%, 20vh) scale(1.18); opacity: 1; }
+  20%  { transform: translate(-50%, 24vh) scale(1); }
+  46%  { transform: translate(-50%, 22vh) scale(1); opacity: 1; }
+  60%  { transform: translate(-50%, 14vh) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -42vh) scale(1.02); opacity: 0; }
+}
+.sink-toast {
+  position: fixed; left: 50%; bottom: 0; z-index: 100; pointer-events: none;
+  font-size: clamp(28px, 6vw, 56px); font-weight: 800; color: var(--accent);
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45); white-space: nowrap;
+  animation: sinkToast 2.8s cubic-bezier(0.2, 0.75, 0.3, 1) forwards;
+}
+
+/* caller tracked-card history */
+.track-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.track-add { display: flex; gap: 6px; flex: 1; min-width: 200px; }
+.track-add input {
+  flex: 1; background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 9px 10px; font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 15px; letter-spacing: 2px; text-transform: uppercase;
+}
+.tracked-list { display: flex; flex-direction: column; gap: 12px; }
+.tracked { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--panel-2); }
+.tracked.new { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); animation: flashNew 1.6s ease; }
+@keyframes flashNew { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 2px var(--accent); } }
+.tracked-head { display: flex; align-items: center; gap: 10px; }
+.tracked-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
+.tracked-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; }
+.tracked-new-tag { font-size: 10px; font-weight: 700; color: var(--bg); background: var(--accent); border-radius: 5px; padding: 2px 6px; text-transform: uppercase; }
+.tracked-head .grow { flex: 1; }
+.tracked-name { background: var(--panel); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 6px 9px; font-size: 13px; margin: 8px 0; width: 100%; }
+.tracked-toggles { display: flex; gap: 6px; }
+.icon-btn.sm { font-size: 13px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 6px; }
+.tracked-expand { margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; }
+.tracked-qr { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+.games-list { display: flex; flex-direction: column; gap: 8px; }
+.game-row { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; }
+.game-row .grow { flex: 1; color: var(--muted); }
+
 @media (max-width: 760px) {
-  .roles, .player-grid, .caller-cols, .handout, .call-panel, .verify-result { grid-template-columns: 1fr; }
+  .roles, .player-grid, .caller-cols, .handout, .call-panel, .verify-result, .tracked-expand { grid-template-columns: 1fr; }
   .called-board { grid-template-columns: repeat(10, 1fr); }
 }

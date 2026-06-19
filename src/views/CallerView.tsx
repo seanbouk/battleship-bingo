@@ -1,101 +1,159 @@
 import { useEffect, useMemo, useState } from 'react'
 import TopBar from '../components/TopBar'
-import PlayableCard from '../components/PlayableCard'
+import TrackedCardRow from '../components/TrackedCardRow'
 import Qr from '../components/Qr'
 import { generateCard } from '../engine/card'
 import { evaluateCard } from '../engine/win'
-import { cardCodeFor } from '../engine/rng'
+import { cardCodeFor, makeRng } from '../engine/rng'
 import { DEFAULT_POOL } from '../engine/fleet'
 import { hrefFor } from '../lib/route'
 import { randomSeed, normalizeCode } from '../lib/seed'
 
+interface TrackedCard {
+  code: string
+  name: string
+  source: 'issued' | 'checked'
+}
 interface Game {
-  called: number[]
+  drawSeed: string
+  drawCount: number
   packSeed: string
   issued: number
+  cards: TrackedCard[]
+  startedAt: number
+}
+interface Archived {
+  game: Game
+  endedAt: number
 }
 
-const KEY = 'bb.game'
+const GAME_KEY = 'bb.game'
+const GAMES_KEY = 'bb.games'
+
+function freshGame(): Game {
+  return {
+    drawSeed: randomSeed(),
+    drawCount: 0,
+    packSeed: randomSeed(),
+    issued: 0,
+    cards: [],
+    startedAt: Date.now(),
+  }
+}
 
 function loadGame(): Game {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(GAME_KEY)
     if (raw) {
       const g = JSON.parse(raw)
-      if (Array.isArray(g.called) && typeof g.packSeed === 'string') {
-        return { called: g.called, packSeed: g.packSeed, issued: g.issued ?? 0 }
+      if (typeof g.drawSeed === 'string' && typeof g.drawCount === 'number') {
+        return { ...freshGame(), ...g, cards: g.cards ?? [] }
       }
     }
   } catch {
     /* ignore */
   }
-  return { called: [], packSeed: randomSeed(), issued: 0 }
+  return freshGame()
+}
+
+function loadGames(): Archived[] {
+  try {
+    const raw = localStorage.getItem(GAMES_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
 }
 
 export default function CallerView() {
   const [game, setGame] = useState<Game>(loadGame)
-  const [verify, setVerify] = useState('')
+  const [games, setGames] = useState<Archived[]>(loadGames)
+  const [lastAdded, setLastAdded] = useState<string | null>(null)
+  const [verifyInput, setVerifyInput] = useState('')
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(game))
+    localStorage.setItem(GAME_KEY, JSON.stringify(game))
   }, [game])
+  useEffect(() => {
+    localStorage.setItem(GAMES_KEY, JSON.stringify(games))
+  }, [games])
 
-  const calledSet = useMemo(() => new Set(game.called), [game.called])
-  const last = game.called[game.called.length - 1]
+  // Deterministic draw order seeded per game: undo then call always yields the
+  // same number, since calling just walks a fixed shuffled sequence.
+  const order = useMemo(
+    () => makeRng(`draw|${game.drawSeed}`).shuffle(Array.from({ length: DEFAULT_POOL }, (_, i) => i + 1)),
+    [game.drawSeed],
+  )
+  const called = order.slice(0, game.drawCount)
+  const calledSet = useMemo(() => new Set(called), [game.drawSeed, game.drawCount])
+  const last = called[called.length - 1]
 
   function callNext() {
-    const remaining: number[] = []
-    for (let n = 1; n <= DEFAULT_POOL; n++) if (!calledSet.has(n)) remaining.push(n)
-    if (remaining.length === 0) return
-    const n = remaining[Math.floor(Math.random() * remaining.length)]
-    setGame((g) => ({ ...g, called: [...g.called, n] }))
+    setGame((g) => ({ ...g, drawCount: Math.min(DEFAULT_POOL, g.drawCount + 1) }))
   }
   function undo() {
-    setGame((g) => ({ ...g, called: g.called.slice(0, -1) }))
+    setGame((g) => ({ ...g, drawCount: Math.max(0, g.drawCount - 1) }))
   }
   function newGame() {
-    if (!confirm('Start a new game? This clears the called numbers.')) return
-    setGame({ called: [], packSeed: randomSeed(), issued: 0 })
+    if (!confirm('Start a new game? The current game is saved under Previous games.')) return
+    setGames((prev) => [{ game, endedAt: Date.now() }, ...prev].slice(0, 20))
+    setGame(freshGame())
+    setLastAdded(null)
+  }
+  function restore(a: Archived) {
+    setGames((prev) => [{ game, endedAt: Date.now() }, ...prev.filter((x) => x !== a)].slice(0, 20))
+    setGame(a.game)
+  }
+
+  function addCard(rawCode: string, source: 'issued' | 'checked') {
+    const code = normalizeCode(rawCode)
+    if (code.length < 4) return
+    setGame((g) =>
+      g.cards.some((c) => c.code === code)
+        ? g
+        : { ...g, cards: [{ code, name: '', source }, ...g.cards] },
+    )
+    setLastAdded(code)
   }
   function issueCard() {
+    addCard(cardCodeFor(game.packSeed, game.issued), 'issued')
     setGame((g) => ({ ...g, issued: g.issued + 1 }))
   }
-
-  const lastIssuedCode = game.issued > 0 ? cardCodeFor(game.packSeed, game.issued - 1) : null
-
-  // verification
-  const verifyCode = normalizeCode(verify)
-  const verifyCard = verifyCode.length >= 4 ? generateCard(verifyCode) : null
-  const verifyStatus = verifyCard ? evaluateCard(verifyCard, calledSet) : null
-  const verifyMarked = verifyCard
-    ? new Set(verifyCard.numbers.filter((n) => calledSet.has(n)))
-    : new Set<number>()
+  function checkCard() {
+    addCard(verifyInput, 'checked')
+    setVerifyInput('')
+  }
+  function removeCard(code: string) {
+    setGame((g) => ({ ...g, cards: g.cards.filter((c) => c.code !== code) }))
+  }
+  function renameCard(code: string, name: string) {
+    setGame((g) => ({ ...g, cards: g.cards.map((c) => (c.code === code ? { ...c, name } : c)) }))
+  }
 
   return (
     <>
       <TopBar />
       <main className="caller">
-        {/* --- caller board --- */}
         <section className="panel call-panel">
           <div className="call-now">
             <div className="call-big">{last ?? '—'}</div>
             <div className="call-meta">
-              {game.called.length} of {DEFAULT_POOL} called
+              {game.drawCount} of {DEFAULT_POOL} called
               <div className="recent">
-                {game.called.slice(-6, -1).reverse().map((n) => (
-                  <span key={n}>{n}</span>
+                {called.slice(-6, -1).reverse().map((n, i) => (
+                  <span key={`${n}-${i}`}>{n}</span>
                 ))}
               </div>
             </div>
             <div className="call-buttons">
-              <button className="action big" onClick={callNext} disabled={game.called.length >= DEFAULT_POOL}>
-                Call number
+              <button className="action big" onClick={callNext} disabled={game.drawCount >= DEFAULT_POOL}>
+                📣 Call number
               </button>
-              <button className="ghost" onClick={undo} disabled={!game.called.length}>
-                Undo
+              <button className="ghost" onClick={undo} disabled={!game.drawCount}>
+                ↩️ Undo
               </button>
               <button className="ghost" onClick={newGame}>
-                New game
+                🆕 New game
               </button>
             </div>
           </div>
@@ -108,73 +166,80 @@ export default function CallerView() {
           </div>
         </section>
 
-        <div className="caller-cols">
-          {/* --- hand out cards --- */}
+        <section className="panel">
+          <h2 className="section-h">Open table</h2>
+          <p className="hint">Anyone scans this and gets a random card to play.</p>
+          <div className="handout-half">
+            <Qr text={hrefFor('play')} />
+            <code className="link">{hrefFor('play')}</code>
+          </div>
+        </section>
+
+        <section className="panel">
+          <h2 className="section-h">Tracked cards</h2>
+          <div className="track-controls">
+            <button className="action" onClick={issueCard}>
+              🎟️ Issue a card
+            </button>
+            <div className="track-add">
+              <input
+                placeholder="enter a shouted code"
+                value={verifyInput}
+                onChange={(e) => setVerifyInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && checkCard()}
+                spellCheck={false}
+              />
+              <button className="ghost" onClick={checkCard}>
+                ➕ Check
+              </button>
+            </div>
+          </div>
+
+          {game.cards.length === 0 ? (
+            <p className="hint">Issue a card to hand out, or enter a code a player shouts to check their claim.</p>
+          ) : (
+            <div className="tracked-list">
+              {game.cards.map((c) => {
+                const card = generateCard(c.code)
+                const marked = new Set(card.numbers.filter((n) => calledSet.has(n)))
+                const status = evaluateCard(card, calledSet)
+                return (
+                  <TrackedCardRow
+                    key={c.code}
+                    code={c.code}
+                    name={c.name}
+                    source={c.source}
+                    isNew={c.code === lastAdded}
+                    card={card}
+                    marked={marked}
+                    status={status}
+                    onRename={(name) => renameCard(c.code, name)}
+                    onRemove={() => removeCard(c.code)}
+                  />
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        {games.length > 0 && (
           <section className="panel">
-            <h2 className="section-h">Hand out cards</h2>
-            <div className="handout">
-              <div className="handout-half">
-                <h3>Open table</h3>
-                <p className="hint">Anyone scans and gets a random card.</p>
-                <Qr text={hrefFor('play')} />
-                <code className="link">{hrefFor('play')}</code>
-              </div>
-              <div className="handout-half">
-                <h3>Issue a card</h3>
-                <p className="hint">One specific card — e.g. after taking the entry fee.</p>
-                {lastIssuedCode ? (
-                  <>
-                    <Qr text={hrefFor('card', lastIssuedCode)} />
-                    <div className="issued-code">
-                      {lastIssuedCode} <span>· card #{game.issued}</span>
-                    </div>
-                  </>
-                ) : (
-                  <p className="hint">No cards issued yet.</p>
-                )}
-                <button className="action" onClick={issueCard}>
-                  Issue {lastIssuedCode ? 'next' : 'a'} card
-                </button>
-              </div>
+            <h2 className="section-h">Previous games</h2>
+            <div className="games-list">
+              {games.map((a, i) => (
+                <div className="game-row" key={`${a.endedAt}-${i}`}>
+                  <span>{new Date(a.endedAt).toLocaleString()}</span>
+                  <span className="grow">
+                    {a.game.drawCount} called · {a.game.cards.length} cards
+                  </span>
+                  <button className="ghost" onClick={() => restore(a)}>
+                    ♻️ Restore
+                  </button>
+                </div>
+              ))}
             </div>
           </section>
-
-          {/* --- verify a claim --- */}
-          <section className="panel">
-            <h2 className="section-h">Check a claim</h2>
-            <p className="hint">Type the code the player shouts to see their card against the numbers called so far.</p>
-            <input
-              className="verify-input"
-              placeholder="card code"
-              value={verify}
-              onChange={(e) => setVerify(e.target.value)}
-              spellCheck={false}
-            />
-            {verifyCard && verifyStatus && (
-              <div className="verify-result">
-                <PlayableCard card={verifyCard} marked={verifyMarked} status={verifyStatus} readOnly />
-                <div className="verify-summary">
-                  {verifyStatus.allClear ? (
-                    <span className="badge win">ALL CLEAR ✓</span>
-                  ) : verifyStatus.firstShip ? (
-                    <span className="badge win">
-                      {verifyStatus.sunkCount}/{verifyStatus.totalShips} sunk
-                    </span>
-                  ) : (
-                    <span className="badge">nothing sunk yet</span>
-                  )}
-                  <ul className="ship-status compact">
-                    {verifyStatus.ships.map((s) => (
-                      <li key={s.ship.type.id} className={s.sunk ? 'sunk' : ''}>
-                        {s.ship.type.short} {s.sunk ? '✓' : `${s.hits}/${s.ship.cells.length}`}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
+        )}
       </main>
     </>
   )
