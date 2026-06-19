@@ -108,3 +108,39 @@ const PALETTES: Record<Style, Record<Mode, Palette>> = {
 export function getPalette(style: Style, mode: Mode): Palette {
   return PALETTES[style][mode]
 }
+
+function darken(color: string, f: number): string {
+  if (!color.startsWith('#')) return color
+  let h = color.slice(1)
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(v * f))).toString(16).padStart(2, '0')
+  return `#${ch(r)}${ch(g)}${ch(b)}`
+}
+
+// PDFs always print on white. Day palettes are already dark-on-light, so we just
+// force the page white. Night palettes are light-on-dark, so we keep each hue's
+// identity but darken it to read on white.
+export function printPalette(style: Style, mode: Mode): Palette {
+  const p = getPalette(style, mode)
+  if (mode === 'day') {
+    return { ...p, bg: '#ffffff', panel: '#ffffff' }
+  }
+  return {
+    ...p,
+    bg: '#ffffff',
+    panel: '#ffffff',
+    water: '#f5f7f6',
+    gridLine: '#dadedb',
+    gridLineStrong: '#9aa49f',
+    coordText: '#7b857f',
+    title: '#16221c',
+    subtitle: '#5b665f',
+    hullStroke: darken(p.hullStroke, 0.5),
+    hullFill: 'rgba(20,30,25,0.06)',
+    numberText: '#15201a',
+    ship: Object.fromEntries(Object.entries(p.ship).map(([k, v]) => [k, darken(v, 0.62)])),
+  }
+}

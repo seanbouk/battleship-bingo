@@ -1,6 +1,6 @@
 import { Card, PlacedShip } from '../engine/card'
 import { Style, Mode } from '../settings/SettingsContext'
-import { getPalette, Palette } from './palette'
+import { getPalette, printPalette, Palette } from './palette'
 import { SHIP_SPRITES } from './shipSprites'
 
 export interface RenderOptions {
@@ -8,6 +8,8 @@ export interface RenderOptions {
   mode: Mode
   /** grid cell size in px (controls overall resolution); default 40 */
   cell?: number
+  /** render for print: white background, darkened night colours */
+  print?: boolean
 }
 
 const PAD = 16
@@ -63,8 +65,10 @@ function reconShip(ship: PlacedShip, x0: number, y0: number, cell: number): stri
   const horiz = ship.orientation === 'h'
   const cx = x0 + ((b.minC + b.maxC + 1) / 2) * cell
   const cy = y0 + ((b.minR + b.maxR + 1) / 2) * cell
-  const beam = cell * 0.8
-  const len = ship.type.length * cell * 0.94
+  // Uniform (true-proportion) scale to fill the footprint length; only cap the
+  // beam so a wide hull (carrier) doesn't spill past its single-cell width.
+  const len = ship.type.length * cell * 0.92
+  const beam = Math.min(len * (sprite.w / sprite.h), cell * 0.95)
   const ix = (-beam / 2).toFixed(1)
   const iy = (-len / 2).toFixed(1)
   const transform = horiz
@@ -79,7 +83,7 @@ function reconShip(ship: PlacedShip, x0: number, y0: number, cell: number): stri
 
 export function cardToSvg(card: Card, opts: RenderOptions): string {
   const cell = opts.cell ?? 40
-  const pal = getPalette(opts.style, opts.mode)
+  const pal = opts.print ? printPalette(opts.style, opts.mode) : getPalette(opts.style, opts.mode)
   const board = card.grid * cell
   const x0 = PAD + COORD
   const y0 = PAD + HEADER + COORD
@@ -146,9 +150,12 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
       parts.push(reconShip(ship, x0, y0, cell))
     }
   }
-  // ---- numbers (drawn last so they sit on top of hulls/insignia) ----
-  // Sonar: clean colored numerals. Recon: white numerals on a dark disc so they
-  // stay legible over the illustrated hull and deck insignia.
+  // ---- numbers (drawn last so they sit on top of hulls) ----
+  // Numbers carry the ship colour in both styles. Recon adds a plate behind them
+  // for legibility over the pixel hull; the plate flips to suit dark vs light
+  // numbers (bright night numbers -> dark plate; dark day/print numbers -> light).
+  const darkNumbers = opts.print || opts.mode === 'day'
+  const plate = darkNumbers ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.5)'
   for (const ship of card.ships) {
     const color = pal.ship[ship.type.id] ?? pal.hullStroke
     for (const c of ship.cells) {
@@ -156,12 +163,11 @@ export function cardToSvg(card: Card, opts: RenderOptions): string {
       const cy = y0 + (c.r + 0.5) * cell
       if (opts.style === 'recon') {
         parts.push(
-          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(cell * 0.3).toFixed(1)}" fill="rgba(0,0,0,0.5)"/>`,
+          `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(cell * 0.27).toFixed(1)}" fill="${plate}"/>`,
         )
       }
-      const numColor = opts.style === 'sonar' ? color : '#ffffff'
       parts.push(
-        `<text x="${cx.toFixed(1)}" y="${(cy + cell * 0.15).toFixed(1)}" text-anchor="middle" fill="${numColor}" font-size="${(cell * 0.42).toFixed(1)}" font-weight="700">${c.n}</text>`,
+        `<text x="${cx.toFixed(1)}" y="${(cy + cell * 0.15).toFixed(1)}" text-anchor="middle" fill="${color}" font-size="${(cell * 0.42).toFixed(1)}" font-weight="700">${c.n}</text>`,
       )
     }
   }

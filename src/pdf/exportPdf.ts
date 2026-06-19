@@ -44,7 +44,7 @@ export async function exportPackPdf(
       const col = slot % cols
       const row = Math.floor(slot / cols)
 
-      const svgStr = cardToSvg(pack.cards[i], render)
+      const svgStr = cardToSvg(pack.cards[i], { ...render, print: true })
       const parsed = new DOMParser().parseFromString(svgStr, 'image/svg+xml')
       const el = document.importNode(parsed.documentElement, true) as unknown as SVGSVGElement
       host.appendChild(el)
