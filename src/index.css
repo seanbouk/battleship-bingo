@@ -311,19 +311,25 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 
 /* "you sank my ___" toast: rises from the bottom, bounces in, pauses ~halfway,
    eases off the top. No background. */
+/* arrives from below the fold and bounces upward like a ball settling against a
+   ceiling at ~40vh — no scaling, just vertical overshoot/rebound. */
 @keyframes sinkToast {
-  0%   { transform: translate(-50%, 104vh) scale(.85); opacity: 0; }       /* just below the fold */
-  5%   { opacity: 1; }
-  15%  { transform: translate(-50%, 34vh) scale(1.12); opacity: 1; }       /* overshoot up */
-  22%  { transform: translate(-50%, 40vh) scale(1); }                      /* settle = bounce out */
-  70%  { transform: translate(-50%, 40vh) scale(1); opacity: 1; }          /* hold ~half-board */
-  100% { transform: translate(-50%, -34vh) scale(1.02); opacity: 0; }      /* ease off the top */
+  0%   { transform: translate(-50%, 104vh); opacity: 0; }   /* just below the fold */
+  4%   { opacity: 1; }
+  20%  { transform: translate(-50%, 34vh); }                /* shoots up past target */
+  28%  { transform: translate(-50%, 43vh); }                /* falls back down */
+  34%  { transform: translate(-50%, 37vh); }                /* smaller rebound up */
+  39%  { transform: translate(-50%, 41vh); }                /* tiny settle down */
+  43%  { transform: translate(-50%, 40vh); }                /* at rest */
+  74%  { transform: translate(-50%, 40vh); opacity: 1; }    /* hold */
+  100% { transform: translate(-50%, -34vh); opacity: 0; }   /* ease off the top */
 }
 .sink-toast {
   position: fixed; left: 50%; top: 0; z-index: 100; pointer-events: none;
   font-size: clamp(30px, 6.5vw, 60px); font-weight: 800; color: var(--accent);
-  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45); white-space: nowrap;
-  animation: sinkToast 3.4s ease-out forwards;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4), 0 5px 20px rgba(0, 0, 0, 0.55);
+  white-space: nowrap; animation: sinkToast 3.4s ease-out forwards;
 }
 
 /* caller tracked-card history */
@@ -336,8 +342,20 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
 }
 .tracked-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
 .tracked { border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: var(--panel-2); }
-.tracked.new { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); animation: flashNew 1.6s ease; }
-@keyframes flashNew { 0% { box-shadow: 0 0 0 5px var(--accent); } 100% { box-shadow: 0 0 0 2px var(--accent); } }
+/* a brand-new card comes in bright then fades out (no lingering stroke) */
+.tracked.new { animation: flashNew 1s ease-out; }
+@keyframes flashNew {
+  0% { box-shadow: 0 0 0 3px var(--accent), 0 0 14px var(--accent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+/* a card whose ship just sank pulses until the next number is called */
+.tracked.sank { animation: sankPulse 0.9s ease-in-out infinite; }
+@keyframes sankPulse {
+  0%, 100% { box-shadow: 0 0 0 2px var(--accent), 0 0 5px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 0 0 0 3px var(--accent), 0 0 16px var(--accent); }
+}
+.sank-label { font-size: 10px; font-weight: 700; color: var(--accent); }
+.dialog.wide { max-width: 460px; }
 .tracked-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .tracked-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 17px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
 .tracked-tag { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }

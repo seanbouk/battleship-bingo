@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import TopBar from '../components/TopBar'
 import TrackedCardRow from '../components/TrackedCardRow'
 import Qr from '../components/Qr'
+import CopyButton from '../components/CopyButton'
 import { generateCard } from '../engine/card'
 import { evaluateCard } from '../engine/win'
 import { cardCodeFor, makeRng } from '../engine/rng'
@@ -180,7 +181,7 @@ export default function CallerView() {
               🎟️ Issue a card
             </button>
             <button className="ghost" onPointerDown={() => setShowOpenTable(true)}>
-              📺 Open table
+              🔗 Get link
             </button>
             <div className="track-add">
               <input
@@ -204,6 +205,13 @@ export default function CallerView() {
                 const card = generateCard(c.code)
                 const marked = new Set(card.numbers.filter((n) => calledSet.has(n)))
                 const status = evaluateCard(card, calledSet)
+                // a ship that the most recent call just completed → highlight it
+                const sankShip =
+                  last != null
+                    ? card.ships.find(
+                        (s) => s.cells.some((x) => x.n === last) && s.cells.every((x) => calledSet.has(x.n)),
+                      )
+                    : undefined
                 return (
                   <TrackedCardRow
                     key={c.code}
@@ -211,6 +219,7 @@ export default function CallerView() {
                     name={c.name}
                     source={c.source}
                     isNew={c.code === lastAdded}
+                    justSank={sankShip ? sankShip.type.short : null}
                     card={card}
                     marked={marked}
                     status={status}
@@ -248,12 +257,13 @@ export default function CallerView() {
           className="overlay"
           onPointerDown={(e) => e.target === e.currentTarget && setShowOpenTable(false)}
         >
-          <div className="dialog" role="dialog" aria-modal="true" aria-label="Open table">
-            <h2>Open table</h2>
-            <p className="dialog-sub">Anyone scans this and gets a random card to play.</p>
+          <div className="dialog" role="dialog" aria-modal="true" aria-label="Player link">
+            <h2>Player link</h2>
+            <p className="dialog-sub">Anyone who opens this gets a random card to play.</p>
             <div className="share-block">
               <Qr text={hrefFor('play')} />
               <code className="link">{hrefFor('play')}</code>
+              <CopyButton text={hrefFor('play')} label="Copy player link" />
             </div>
             <div className="dialog-actions">
               <button className="action" onPointerDown={() => setShowOpenTable(false)}>
