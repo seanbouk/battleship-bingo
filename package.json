@@ -11,9 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/qrcode": "^1.5.6",
+    "jspdf": "^2.5.2",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "jspdf": "^2.5.2",
     "svg2pdf.js": "^2.2.4"
   },
   "devDependencies": {

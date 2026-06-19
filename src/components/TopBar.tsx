@@ -1,37 +1,20 @@
+import { ReactNode } from 'react'
 import { useSettings, Style, Mode } from '../settings/SettingsContext'
+import { go } from '../lib/route'
 
-interface Props {
-  seed: string
-  onSeed: (s: string) => void
-  onRandomSeed: () => void
-  onDownload: () => void
-}
-
-export default function TopBar({ seed, onSeed, onRandomSeed, onDownload }: Props) {
+// Shared chrome for every view: the title (always links home), an optional
+// middle slot (e.g. the generator's controls on home), and the site-wide
+// Sonar/Recon + Day/Night toggles which drive the cards everywhere.
+export default function TopBar({ middle }: { middle?: ReactNode }) {
   const { style, mode, setStyle, setMode } = useSettings()
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <h1>⚓ BATTLESHIP BINGO</h1>
+        <button className="brand" onClick={() => go('home')} title="Home">
+          ⚓ BATTLESHIP BINGO
+        </button>
 
-        {/* middle group — sits in the content column, left of the toggles */}
-        <div className="topbar-mid">
-          <div className="seed-field">
-            <span className="seed-tag">Pack</span>
-            <input
-              aria-label="Pack seed"
-              value={seed}
-              onChange={(e) => onSeed(e.target.value.toUpperCase())}
-              spellCheck={false}
-            />
-            <button className="icon-btn" title="New random pack" onClick={onRandomSeed}>
-              🎲
-            </button>
-          </div>
-          <button className="action" onClick={onDownload}>
-            Download PDF
-          </button>
-        </div>
+        <div className="topbar-mid">{middle}</div>
 
         <div className="spacer" />
 

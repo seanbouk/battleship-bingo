@@ -1,45 +1,27 @@
-import { useMemo, useState } from 'react'
-import TopBar from './components/TopBar'
-import CardPreview from './components/CardPreview'
-import DownloadDialog from './components/DownloadDialog'
-import { generatePack } from './engine/pack'
-import { randomSeed } from './lib/seed'
-
-const PREVIEW_COUNT = 6
+import { useEffect } from 'react'
+import { useRoute, go } from './lib/route'
+import { randomCardCode } from './lib/seed'
+import HomeView from './views/HomeView'
+import PlayerView from './views/PlayerView'
+import CallerView from './views/CallerView'
 
 export default function App() {
-  const [seed, setSeed] = useState(() => randomSeed())
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const route = useRoute()
 
-  // A small sample of the pack for on-screen preview; the real (larger) pack is
-  // generated from the same seed when the user downloads.
-  const preview = useMemo(() => generatePack({ count: PREVIEW_COUNT, packSeed: seed }), [seed])
+  // "Play" with no specific card = grab a fresh one, then settle on its ?card URL
+  // so it's bookmarkable/shareable.
+  useEffect(() => {
+    if (route.view === 'play') go('card', randomCardCode(), true)
+  }, [route.view])
 
-  return (
-    <>
-      <TopBar
-        seed={seed}
-        onSeed={setSeed}
-        onRandomSeed={() => setSeed(randomSeed())}
-        onDownload={() => setDialogOpen(true)}
-      />
-      <main>
-        <div className="cards">
-          {preview.cards.map((card) => (
-            <CardPreview key={card.code} card={card} />
-          ))}
-        </div>
-        <p className="hint" style={{ marginTop: 28 }}>
-          A preview of pack <strong>{seed}</strong>. Choose how many cards and how many per sheet
-          when you download. Win order: <strong>first ship</strong> → <strong>first of each type</strong>{' '}
-          → <strong>all clear</strong>. Recon ship sprites:{' '}
-          <a href="https://opengameart.org/content/sea-warfare-set-ships-and-more" target="_blank" rel="noreferrer">
-            “Sea Warfare Set” by Lowder2
-          </a>{' '}
-          (CC0).
-        </p>
-      </main>
-      {dialogOpen && <DownloadDialog seed={seed} onClose={() => setDialogOpen(false)} />}
-    </>
-  )
+  switch (route.view) {
+    case 'call':
+      return <CallerView />
+    case 'card':
+      return <PlayerView key={route.card} code={route.card!} />
+    case 'play':
+      return null // redirecting to a fresh card
+    default:
+      return <HomeView />
+  }
 }

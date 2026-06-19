@@ -83,6 +83,50 @@ function reconShip(ship: PlacedShip, x0: number, y0: number, cell: number): stri
   )
 }
 
+export interface CellGeom {
+  shipId: string
+  r: number
+  c: number
+  n: number
+  cx: number
+  cy: number
+  rr: number
+}
+
+export interface CardLayout {
+  W: number
+  H: number
+  cell: number
+  cells: CellGeom[]
+}
+
+// Pixel geometry for a card at a given cell size, matching cardToSvg exactly.
+// The player overlay renders a second SVG with this same viewBox, so its
+// clickable hotspots and daubs line up with the rendered card at any scale.
+export function cardLayout(card: Card, cellSize = 40): CardLayout {
+  const cell = cellSize
+  const board = card.grid * cell
+  const x0 = PAD + COORD
+  const y0 = PAD + HEADER + COORD
+  const W = PAD * 2 + COORD + board
+  const H = PAD * 2 + HEADER + COORD + board + LEGEND
+  const cells: CellGeom[] = []
+  for (const ship of card.ships) {
+    for (const c of ship.cells) {
+      cells.push({
+        shipId: ship.type.id,
+        r: c.r,
+        c: c.c,
+        n: c.n,
+        cx: x0 + (c.c + 0.5) * cell,
+        cy: y0 + (c.r + 0.5) * cell,
+        rr: cell * 0.42,
+      })
+    }
+  }
+  return { W, H, cell, cells }
+}
+
 export function cardToSvg(card: Card, opts: RenderOptions): string {
   const cell = opts.cell ?? 40
   const pal = opts.print ? printPalette(opts.style, opts.mode) : getPalette(opts.style, opts.mode)
