@@ -1,0 +1,26 @@
+{
+  "name": "battleship-bingo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Battleship-themed bingo: generate printable cards and (later) run an interactive caller.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "jspdf": "^2.5.2",
+    "svg2pdf.js": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5"
+  }
+}

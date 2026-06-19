@@ -1,0 +1,156 @@
+:root {
+  --bg: #04130d;
+  --panel: #08251b;
+  --panel-2: #0b3122;
+  --text: #d6ffe9;
+  --muted: #5fae8e;
+  --accent: #39ff9e;
+  --border: #11533c;
+  --shadow: rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+/* Site-wide theming driven by <html data-style data-mode>, set by the top bar.
+   The same setting also drives the SVG/PDF palette (see render/palette.ts). */
+html[data-style='sonar'][data-mode='night'] {
+  --bg: #04130d; --panel: #08251b; --panel-2: #0b3122;
+  --text: #d6ffe9; --muted: #5fae8e; --accent: #39ff9e; --border: #11533c;
+  color-scheme: dark;
+}
+html[data-style='sonar'][data-mode='day'] {
+  --bg: #ece6d4; --panel: #fbf8ef; --panel-2: #f2ecdb;
+  --text: #1c3f63; --muted: #6d5d3c; --accent: #1c5fa8; --border: #cdbf9a;
+  color-scheme: light;
+}
+html[data-style='recon'][data-mode='night'] {
+  --bg: #080b18; --panel: #0e1430; --panel-2: #141c40;
+  --text: #fff4d6; --muted: #7c8ac0; --accent: #ffd23a; --border: #28326a;
+  color-scheme: dark;
+}
+html[data-style='recon'][data-mode='day'] {
+  --bg: #cfdee6; --panel: #eef4f7; --panel-2: #dde9ef;
+  --text: #0d3a4f; --muted: #3d6577; --accent: #0d6f96; --border: #a9c4d0;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s, color 0.25s;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.topbar h1 {
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin: 0;
+  font-weight: 800;
+}
+.topbar .spacer { flex: 1; }
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.seg button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--bg);
+}
+.seg-label { font-size: 11px; color: var(--muted); margin-right: 6px; text-transform: uppercase; letter-spacing: 1px; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 22px;
+}
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.field input {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 14px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.field .row { display: flex; gap: 6px; }
+.field .row input { flex: 1; }
+
+button.action {
+  appearance: none;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button.ghost {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+
+.actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+.stat { font-size: 12px; color: var(--muted); }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+.card-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 10px var(--shadow);
+}
+.card-wrap svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+
+.hint { color: var(--muted); font-size: 13px; line-height: 1.5; }
+a { color: var(--accent); }
