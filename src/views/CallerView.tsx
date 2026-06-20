@@ -72,6 +72,7 @@ export default function CallerView() {
   const [games, setGames] = useState<Archived[]>(loadGames)
   const [lastAdded, setLastAdded] = useState<string | null>(null)
   const [verifyInput, setVerifyInput] = useState('')
+  const [flash, setFlash] = useState<{ code: string; n: number } | null>(null)
   const [alert, setAlert] = useState<{ x: number; w: number } | null>(null)
   const alertTarget = useRef<HTMLElement | null>(null)
 
@@ -171,6 +172,11 @@ export default function CallerView() {
     setGame((g) => ({ ...g, cards: g.cards.map((c) => (c.code === code ? { ...c, name } : c)) }))
   }
 
+  // Clicking a prize-winner chip scrolls to that tracked card and flashes it.
+  function revealCard(code: string) {
+    setFlash((f) => ({ code, n: (f && f.code === code ? f.n : 0) + 1 }))
+  }
+
   // --- prizes --- (winners are computed in `standings`; only in/out-of-play is stored)
   function togglePrize(prizeId: string) {
     setGame((g) => {
@@ -268,9 +274,14 @@ export default function CallerView() {
                       <span className="prize-state">open</span>
                     ) : (
                       winners.map((w) => (
-                        <span className="winner-chip" key={w.code} title={`card ${w.code}`}>
+                        <button
+                          className="winner-chip"
+                          key={w.code}
+                          title={`Go to card ${w.code}`}
+                          onPointerDown={() => revealCard(w.code)}
+                        >
                           🏆 {w.name || w.code} <small>@{w.atCall}</small>
-                        </span>
+                        </button>
                       ))
                     )}
                   </span>
@@ -323,6 +334,7 @@ export default function CallerView() {
                     source={c.source}
                     isNew={c.code === lastAdded}
                     justSank={sankShip ? sankShip.type.short : null}
+                    flashSignal={flash && flash.code === c.code ? flash.n : 0}
                     card={card}
                     marked={marked}
                     status={status}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card } from '../engine/card'
 import { CardStatus } from '../engine/win'
 import PlayableCard from './PlayableCard'
@@ -12,6 +12,8 @@ interface Props {
   source: 'issued' | 'checked'
   isNew: boolean
   justSank?: string | null
+  /** bump this number to scroll-to + flash this row (from a prize chip click) */
+  flashSignal?: number
   card: Card
   marked: Set<number>
   status: CardStatus
@@ -25,6 +27,7 @@ export default function TrackedCardRow({
   source,
   isNew,
   justSank,
+  flashSignal,
   card,
   marked,
   status,
@@ -33,9 +36,27 @@ export default function TrackedCardRow({
 }: Props) {
   const [modal, setModal] = useState<'card' | 'qr' | null>(null)
   const link = hrefFor('card', code)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to and flash this row when its signal bumps. Uses the Web Animations
+  // API (not a CSS class) so it always restarts and survives React re-renders.
+  useEffect(() => {
+    if (!flashSignal) return
+    const el = rootRef.current
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#39ff9e'
+    el.animate(
+      [
+        { boxShadow: `0 0 0 3px ${accent}, 0 0 18px ${accent}` },
+        { boxShadow: '0 0 0 0 rgba(0,0,0,0)' },
+      ],
+      { duration: 1200, easing: 'ease-out' },
+    )
+  }, [flashSignal])
 
   return (
-    <div className={`tracked ${isNew ? 'new' : ''} ${justSank ? 'sank' : ''}`}>
+    <div ref={rootRef} className={`tracked ${isNew ? 'new' : ''} ${justSank ? 'sank' : ''}`}>
       <div className="tracked-head">
         <span className="tracked-code">{code}</span>
         <span className="tracked-tag">{source}</span>
