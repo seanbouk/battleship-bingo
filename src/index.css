@@ -120,6 +120,44 @@ body {
   border-radius: 8px;
   overflow: hidden;
 }
+
+/* compact bistable toggle — mobile only (hidden on desktop, where .seg shows) */
+.brand-short { display: none; }
+.toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.toggle-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s;
+  flex: 0 0 auto;
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 0.15s;
+}
+.toggle[data-on='true'] .toggle-track { background: var(--accent); }
+.toggle[data-on='true'] .toggle-knob { transform: translateX(12px); }
 .seg button {
   appearance: none;
   border: none;
@@ -396,16 +434,20 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
   .called-board { grid-template-columns: repeat(10, 1fr); }
 }
 
-/* top bar reflow: row 1 = breadcrumb + the two switches; everything else
-   (Play Link, or the generator controls on home) wraps to row 2. */
+/* top bar reflow: row 1 = breadcrumb + the two compact switches; everything else
+   (Play Link, or the generator controls on home) wraps to row 2. The radio segs
+   are swapped for single bistable toggles so the pair fits beside the title. */
 @media (max-width: 620px) {
-  .topbar-inner { flex-wrap: wrap; gap: 10px 12px; }
+  .topbar-inner { flex-wrap: wrap; gap: 10px 10px; }
   .topbar .spacer { display: none; }
   .brand-wrap { order: 1; flex: 1 1 auto; min-width: 0; overflow: hidden; }
   .brand { font-size: 15px; letter-spacing: 0.5px; }
+  .brand-full { display: none; }
+  .brand-short { display: inline; }
   .crumb { font-size: 14px; }
-  .seg-group { order: 2; flex: 0 0 auto; }
-  .seg button { padding: 7px 11px; }
+  .seg-group { order: 2; flex: 0 0 auto; gap: 6px; }
+  .seg { display: none; }
+  .toggle { display: inline-flex; }
   /* row 2 — only one of these is ever present at a time */
   .topbar-mid:not(:empty) { order: 3; flex: 1 1 100%; }
   .playlink { order: 4; flex: 1 1 100%; }

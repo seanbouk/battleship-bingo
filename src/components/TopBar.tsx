@@ -20,7 +20,8 @@ export default function TopBar({ middle }: { middle?: ReactNode }) {
       <div className="topbar-inner">
         <div className="brand-wrap">
           <button className="brand" onPointerDown={() => go('home')} title="Home">
-            ⚓ BATTLESHIP BINGO
+            <span className="brand-full">⚓ BATTLESHIP BINGO</span>
+            <span className="brand-short">⚓ BINGO</span>
           </button>
           {crumb && <span className="crumb">›&nbsp;{crumb}</span>}
         </div>
@@ -36,6 +37,7 @@ export default function TopBar({ middle }: { middle?: ReactNode }) {
         )}
 
         <div className="seg-group">
+          {/* desktop: full radio groups */}
           <div className="seg" role="group" aria-label="Card style">
             {(['sonar', 'recon'] as Style[]).map((s) => (
               <button key={s} aria-pressed={style === s} onPointerDown={() => setStyle(s)}>
@@ -50,6 +52,26 @@ export default function TopBar({ middle }: { middle?: ReactNode }) {
               </button>
             ))}
           </div>
+
+          {/* mobile: compact bistable toggles showing only the current value */}
+          <button
+            className="toggle"
+            data-on={style === 'recon'}
+            onPointerDown={() => setStyle(style === 'sonar' ? 'recon' : 'sonar')}
+            aria-label={`Style: ${style === 'sonar' ? 'Sonar' : 'Recon'} (tap to switch)`}
+          >
+            <span className="toggle-label">{style === 'sonar' ? 'Sonar' : 'Recon'}</span>
+            <span className="toggle-track"><span className="toggle-knob" /></span>
+          </button>
+          <button
+            className="toggle"
+            data-on={mode === 'night'}
+            onPointerDown={() => setMode(mode === 'day' ? 'night' : 'day')}
+            aria-label={`Mode: ${mode === 'day' ? 'Day' : 'Night'} (tap to switch)`}
+          >
+            <span className="toggle-label">{mode === 'day' ? 'Day' : 'Night'}</span>
+            <span className="toggle-track"><span className="toggle-knob" /></span>
+          </button>
         </div>
       </div>
 
