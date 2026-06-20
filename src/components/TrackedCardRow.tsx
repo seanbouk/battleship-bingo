@@ -5,6 +5,7 @@ import PlayableCard from './PlayableCard'
 import Qr from './Qr'
 import CopyButton from './CopyButton'
 import { hrefFor } from '../lib/route'
+import { PRIZES, qualifies, PrizeState } from '../engine/prizes'
 
 interface Props {
   code: string
@@ -15,6 +16,8 @@ interface Props {
   card: Card
   marked: Set<number>
   status: CardStatus
+  prizes: Record<string, PrizeState>
+  onAward: (prizeId: string) => void
   onRename: (name: string) => void
   onRemove: () => void
 }
@@ -28,11 +31,24 @@ export default function TrackedCardRow({
   card,
   marked,
   status,
+  prizes,
+  onAward,
   onRename,
   onRemove,
 }: Props) {
   const [modal, setModal] = useState<'card' | 'qr' | null>(null)
   const link = hrefFor('card', code)
+
+  // Prizes this card genuinely qualifies for and hasn't already won. An open
+  // prize gets a prominent Award button; an already-won one gets a quiet "tie"
+  // button so a genuine simultaneous claim can still be added at the caller's
+  // discretion.
+  const awardable = PRIZES.filter(
+    (p) =>
+      prizes[p.id]?.enabled &&
+      qualifies(p.id, status) &&
+      !prizes[p.id].winners.some((w) => w.code === code),
+  ).map((p) => ({ ...p, tie: prizes[p.id].winners.length > 0 }))
 
   return (
     <div className={`tracked ${isNew ? 'new' : ''} ${justSank ? 'sank' : ''}`}>
@@ -67,6 +83,20 @@ export default function TrackedCardRow({
           </li>
         ))}
       </ul>
+
+      {awardable.length > 0 && (
+        <div className="award-row">
+          {awardable.map((p) => (
+            <button
+              key={p.id}
+              className={p.tie ? 'award-btn tie' : 'award-btn'}
+              onPointerDown={() => onAward(p.id)}
+            >
+              {p.tie ? `＋ ${p.label} tie` : `🏆 ${p.label}`}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="tracked-toggles">
         <button className="icon-btn sm" title="View card" onPointerDown={() => setModal('card')}>

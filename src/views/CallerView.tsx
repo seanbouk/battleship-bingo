@@ -5,6 +5,7 @@ import { generateCard } from '../engine/card'
 import { evaluateCard } from '../engine/win'
 import { cardCodeFor, makeRng } from '../engine/rng'
 import { DEFAULT_POOL } from '../engine/fleet'
+import { PRIZES, defaultPrizes, PrizeState } from '../engine/prizes'
 import { randomSeed, normalizeCode } from '../lib/seed'
 
 interface TrackedCard {
@@ -18,6 +19,7 @@ interface Game {
   packSeed: string
   issued: number
   cards: TrackedCard[]
+  prizes: Record<string, PrizeState>
   startedAt: number
 }
 interface Archived {
@@ -35,6 +37,7 @@ function freshGame(): Game {
     packSeed: randomSeed(),
     issued: 0,
     cards: [],
+    prizes: defaultPrizes(),
     startedAt: Date.now(),
   }
 }
@@ -45,7 +48,8 @@ function loadGame(): Game {
     if (raw) {
       const g = JSON.parse(raw)
       if (typeof g.drawSeed === 'string' && typeof g.drawCount === 'number') {
-        return { ...freshGame(), ...g, cards: g.cards ?? [] }
+        // merge prize defaults so every prize id exists even for older saves
+        return { ...freshGame(), ...g, cards: g.cards ?? [], prizes: { ...defaultPrizes(), ...(g.prizes ?? {}) } }
       }
     }
   } catch {
@@ -136,6 +140,32 @@ export default function CallerView() {
     setGame((g) => ({ ...g, cards: g.cards.map((c) => (c.code === code ? { ...c, name } : c)) }))
   }
 
+  // --- prizes ---
+  function awardPrize(prizeId: string, code: string, name: string) {
+    setGame((g) => {
+      const p = g.prizes[prizeId]
+      if (!p || p.winners.some((w) => w.code === code)) return g
+      return {
+        ...g,
+        prizes: { ...g.prizes, [prizeId]: { ...p, winners: [...p.winners, { code, name, atCall: g.drawCount }] } },
+      }
+    })
+  }
+  function unawardPrize(prizeId: string, code: string) {
+    setGame((g) => {
+      const p = g.prizes[prizeId]
+      if (!p) return g
+      return { ...g, prizes: { ...g.prizes, [prizeId]: { ...p, winners: p.winners.filter((w) => w.code !== code) } } }
+    })
+  }
+  function togglePrize(prizeId: string) {
+    setGame((g) => {
+      const p = g.prizes[prizeId]
+      if (!p) return g
+      return { ...g, prizes: { ...g.prizes, [prizeId]: { ...p, enabled: !p.enabled } } }
+    })
+  }
+
   // FPS-style "you got hit from over there" cue: if a pulsing (just-sank) card is
   // below the fold, glow at the bottom of the screen toward its column.
   useEffect(() => {
@@ -197,6 +227,50 @@ export default function CallerView() {
         </section>
 
         <section className="panel">
+          <h2 className="section-h">Prizes</h2>
+          <div className="prize-list">
+            {PRIZES.map((p) => {
+              const st = game.prizes[p.id]
+              return (
+                <div
+                  key={p.id}
+                  className={`prize ${st.enabled ? '' : 'off'} ${st.winners.length ? 'won' : ''}`}
+                >
+                  <button
+                    className="prize-toggle"
+                    onPointerDown={() => togglePrize(p.id)}
+                    title={st.enabled ? 'In play — tap to remove' : 'Not in play — tap to add'}
+                    aria-pressed={st.enabled}
+                  >
+                    {st.enabled ? '☑' : '☐'}
+                  </button>
+                  <span className="prize-label">{p.label}</span>
+                  <span className="prize-winners">
+                    {st.winners.length === 0 ? (
+                      <span className="prize-state">{st.enabled ? 'open' : 'not in play'}</span>
+                    ) : (
+                      st.winners.map((w) => (
+                        <span className="winner-chip" key={w.code}>
+                          🏆 {w.code}
+                          {w.name ? ` · ${w.name}` : ''} <small>@{w.atCall}</small>
+                          <button
+                            className="chip-x"
+                            onPointerDown={() => unawardPrize(p.id, w.code)}
+                            title="Undo this award"
+                          >
+                            ✖️
+                          </button>
+                        </span>
+                      ))
+                    )}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="panel">
           <h2 className="section-h">Tracked cards</h2>
           <div className="track-controls">
             <button className="action" onPointerDown={issueCard}>
@@ -242,6 +316,8 @@ export default function CallerView() {
                     card={card}
                     marked={marked}
                     status={status}
+                    prizes={game.prizes}
+                    onAward={(prizeId) => awardPrize(prizeId, c.code, c.name)}
                     onRename={(name) => renameCard(c.code, name)}
                     onRemove={() => removeCard(c.code)}
                   />
