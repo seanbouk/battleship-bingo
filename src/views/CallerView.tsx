@@ -26,6 +26,10 @@ interface Archived {
   game: Game
   endedAt: number
 }
+interface AlertHit {
+  x: number
+  w: number
+}
 
 const GAME_KEY = 'bb.game'
 const GAMES_KEY = 'bb.games'
@@ -73,8 +77,9 @@ export default function CallerView() {
   const [lastAdded, setLastAdded] = useState<string | null>(null)
   const [verifyInput, setVerifyInput] = useState('')
   const [flash, setFlash] = useState<{ code: string; n: number } | null>(null)
-  const [alert, setAlert] = useState<{ x: number; w: number } | null>(null)
-  const alertTarget = useRef<HTMLElement | null>(null)
+  const [alerts, setAlerts] = useState<{ up: AlertHit | null; down: AlertHit | null }>({ up: null, down: null })
+  const upTarget = useRef<HTMLElement | null>(null)
+  const downTarget = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     localStorage.setItem(GAME_KEY, JSON.stringify(game))
@@ -187,19 +192,38 @@ export default function CallerView() {
   }
 
   // FPS-style "you got hit from over there" cue: if a pulsing (just-sank) card is
-  // below the fold, glow at the bottom of the screen toward its column.
+  // off-screen, glow at the nearer screen edge (top and/or bottom) toward its
+  // column. Both can show at once if cards above and below both just sank.
   useEffect(() => {
     function check() {
       const els = Array.from(document.querySelectorAll('.tracked.sank')) as HTMLElement[]
-      const offscreen = els.find((el) => el.getBoundingClientRect().top > window.innerHeight - 48)
-      if (offscreen) {
-        const r = offscreen.getBoundingClientRect()
-        alertTarget.current = offscreen
-        setAlert({ x: r.left + r.width / 2, w: r.width * 1.15 })
-      } else {
-        alertTarget.current = null
-        setAlert(null)
+      const margin = 48
+      let down: AlertHit | null = null
+      let up: AlertHit | null = null
+      let downBestTop = Infinity
+      let upBestBottom = -Infinity
+      downTarget.current = null
+      upTarget.current = null
+      for (const el of els) {
+        const r = el.getBoundingClientRect()
+        const hit = { x: r.left + r.width / 2, w: r.width * 1.15 }
+        if (r.top > window.innerHeight - margin) {
+          // fully below the fold — keep the nearest (smallest top)
+          if (r.top < downBestTop) {
+            downBestTop = r.top
+            down = hit
+            downTarget.current = el
+          }
+        } else if (r.bottom < margin) {
+          // fully above the fold — keep the nearest (largest bottom)
+          if (r.bottom > upBestBottom) {
+            upBestBottom = r.bottom
+            up = hit
+            upTarget.current = el
+          }
+        }
       }
+      setAlerts({ up, down })
     }
     check()
     window.addEventListener('scroll', check, { passive: true })
@@ -367,11 +391,18 @@ export default function CallerView() {
         )}
       </main>
 
-      {alert && (
+      {alerts.up && (
         <div
-          className="down-alert"
-          style={{ left: alert.x, width: alert.w }}
-          onPointerDown={() => alertTarget.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          className="edge-alert up"
+          style={{ left: alerts.up.x, width: alerts.up.w }}
+          onPointerDown={() => upTarget.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        />
+      )}
+      {alerts.down && (
+        <div
+          className="edge-alert down"
+          style={{ left: alerts.down.x, width: alerts.down.w }}
+          onPointerDown={() => downTarget.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
         />
       )}
     </>
