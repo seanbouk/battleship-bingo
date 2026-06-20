@@ -395,3 +395,18 @@ code.link { font-size: 11px; color: var(--muted); word-break: break-all; }
   .roles, .player-grid, .caller-cols, .handout, .call-panel, .verify-result, .tracked-list { grid-template-columns: 1fr; }
   .called-board { grid-template-columns: repeat(10, 1fr); }
 }
+
+/* top bar reflow: row 1 = breadcrumb + the two switches; everything else
+   (Play Link, or the generator controls on home) wraps to row 2. */
+@media (max-width: 620px) {
+  .topbar-inner { flex-wrap: wrap; gap: 10px 12px; }
+  .topbar .spacer { display: none; }
+  .brand-wrap { order: 1; flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .brand { font-size: 15px; letter-spacing: 0.5px; }
+  .crumb { font-size: 14px; }
+  .seg-group { order: 2; flex: 0 0 auto; }
+  .seg button { padding: 7px 11px; }
+  /* row 2 — only one of these is ever present at a time */
+  .topbar-mid:not(:empty) { order: 3; flex: 1 1 100%; }
+  .playlink { order: 4; flex: 1 1 100%; }
+}
