@@ -5,7 +5,7 @@ import { generateCard } from '../engine/card'
 import { evaluateCard } from '../engine/win'
 import { cardCodeFor, makeRng } from '../engine/rng'
 import { DEFAULT_POOL } from '../engine/fleet'
-import { PRIZES, defaultPrizes, PrizeState } from '../engine/prizes'
+import { PRIZES, defaultPrizes, prizeAchievedAt, PrizeConfig, Winner } from '../engine/prizes'
 import { randomSeed, normalizeCode } from '../lib/seed'
 
 interface TrackedCard {
@@ -19,7 +19,7 @@ interface Game {
   packSeed: string
   issued: number
   cards: TrackedCard[]
-  prizes: Record<string, PrizeState>
+  prizes: PrizeConfig
   startedAt: number
 }
 interface Archived {
@@ -92,6 +92,37 @@ export default function CallerView() {
   const calledSet = useMemo(() => new Set(called), [game.drawSeed, game.drawCount])
   const last = called[called.length - 1]
 
+  // position of each called number in the draw order (1-based), for ranking prizes
+  const callPos = useMemo(() => {
+    const m = new Map<number, number>()
+    called.forEach((n, i) => m.set(n, i + 1))
+    return m
+  }, [game.drawSeed, game.drawCount])
+
+  // Auto-standings: for each prize, the tracked card(s) that completed it earliest
+  // (ties share). Computed from the fixed draw order, so it's exact — no manual
+  // award needed. Only knows tracked cards (issued or checked-in), which is the
+  // honest limit; a shouted code becomes tracked and joins the ranking.
+  const standings = useMemo(() => {
+    const out: Record<string, Winner[]> = {}
+    for (const p of PRIZES) {
+      let best = Infinity
+      let winners: Winner[] = []
+      for (const c of game.cards) {
+        const at = prizeAchievedAt(p.id, generateCard(c.code), callPos)
+        if (at === Infinity) continue
+        if (at < best) {
+          best = at
+          winners = [{ code: c.code, name: c.name, atCall: at }]
+        } else if (at === best) {
+          winners.push({ code: c.code, name: c.name, atCall: at })
+        }
+      }
+      out[p.id] = winners
+    }
+    return out
+  }, [game.cards, callPos])
+
   function callNext() {
     setGame((g) => ({ ...g, drawCount: Math.min(DEFAULT_POOL, g.drawCount + 1) }))
   }
@@ -140,29 +171,12 @@ export default function CallerView() {
     setGame((g) => ({ ...g, cards: g.cards.map((c) => (c.code === code ? { ...c, name } : c)) }))
   }
 
-  // --- prizes ---
-  function awardPrize(prizeId: string, code: string, name: string) {
-    setGame((g) => {
-      const p = g.prizes[prizeId]
-      if (!p || p.winners.some((w) => w.code === code)) return g
-      return {
-        ...g,
-        prizes: { ...g.prizes, [prizeId]: { ...p, winners: [...p.winners, { code, name, atCall: g.drawCount }] } },
-      }
-    })
-  }
-  function unawardPrize(prizeId: string, code: string) {
-    setGame((g) => {
-      const p = g.prizes[prizeId]
-      if (!p) return g
-      return { ...g, prizes: { ...g.prizes, [prizeId]: { ...p, winners: p.winners.filter((w) => w.code !== code) } } }
-    })
-  }
+  // --- prizes --- (winners are computed in `standings`; only in/out-of-play is stored)
   function togglePrize(prizeId: string) {
     setGame((g) => {
       const p = g.prizes[prizeId]
       if (!p) return g
-      return { ...g, prizes: { ...g.prizes, [prizeId]: { ...p, enabled: !p.enabled } } }
+      return { ...g, prizes: { ...g.prizes, [prizeId]: { enabled: !p.enabled } } }
     })
   }
 
@@ -228,38 +242,34 @@ export default function CallerView() {
 
         <section className="panel">
           <h2 className="section-h">Prizes</h2>
+          <p className="hint" style={{ marginTop: -6, marginBottom: 12 }}>
+            Leaders are computed from issued &amp; checked-in cards. A shouted code joins the
+            ranking once you check it in below.
+          </p>
           <div className="prize-list">
             {PRIZES.map((p) => {
-              const st = game.prizes[p.id]
+              const enabled = game.prizes[p.id]?.enabled
+              const winners = enabled ? standings[p.id] : []
               return (
-                <div
-                  key={p.id}
-                  className={`prize ${st.enabled ? '' : 'off'} ${st.winners.length ? 'won' : ''}`}
-                >
+                <div key={p.id} className={`prize ${enabled ? '' : 'off'} ${winners.length ? 'won' : ''}`}>
                   <button
                     className="prize-toggle"
                     onPointerDown={() => togglePrize(p.id)}
-                    title={st.enabled ? 'In play — tap to remove' : 'Not in play — tap to add'}
-                    aria-pressed={st.enabled}
+                    title={enabled ? 'In play — tap to remove' : 'Not in play — tap to add'}
+                    aria-pressed={enabled}
                   >
-                    {st.enabled ? '☑' : '☐'}
+                    {enabled ? '☑' : '☐'}
                   </button>
                   <span className="prize-label">{p.label}</span>
                   <span className="prize-winners">
-                    {st.winners.length === 0 ? (
-                      <span className="prize-state">{st.enabled ? 'open' : 'not in play'}</span>
+                    {!enabled ? (
+                      <span className="prize-state">not in play</span>
+                    ) : winners.length === 0 ? (
+                      <span className="prize-state">open</span>
                     ) : (
-                      st.winners.map((w) => (
-                        <span className="winner-chip" key={w.code}>
-                          🏆 {w.code}
-                          {w.name ? ` · ${w.name}` : ''} <small>@{w.atCall}</small>
-                          <button
-                            className="chip-x"
-                            onPointerDown={() => unawardPrize(p.id, w.code)}
-                            title="Undo this award"
-                          >
-                            ✖️
-                          </button>
+                      winners.map((w) => (
+                        <span className="winner-chip" key={w.code} title={`card ${w.code}`}>
+                          🏆 {w.name || w.code} <small>@{w.atCall}</small>
                         </span>
                       ))
                     )}
@@ -316,8 +326,6 @@ export default function CallerView() {
                     card={card}
                     marked={marked}
                     status={status}
-                    prizes={game.prizes}
-                    onAward={(prizeId) => awardPrize(prizeId, c.code, c.name)}
                     onRename={(name) => renameCard(c.code, name)}
                     onRemove={() => removeCard(c.code)}
                   />
