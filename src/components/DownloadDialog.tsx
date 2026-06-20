@@ -48,8 +48,12 @@ export default function DownloadDialog({ seed, onClose }: Props) {
     }
   }
 
+  // Backdrop closes on pointer-down, not mouse-down: the button that opens this
+  // dialog fires on pointer-down, and a mouse-down backdrop would catch the
+  // synthesized mouse event from that same press (esp. on touch) and instantly
+  // close. A pointer-down handler ignores those synthesized mouse events.
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
+    <div className="overlay" onPointerDown={(e) => e.target === e.currentTarget && !busy && onClose()}>
       <div className="dialog" role="dialog" aria-modal="true" aria-label="Download cards">
         <h2>Download cards</h2>
         <p className="dialog-sub">
