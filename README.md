@@ -21,7 +21,9 @@ their fleet. Win tiers:
     stable), hand out a **Play Link**, **issue** tracked cards, and **check a
     claim** by typing the shouted code — every tracked card updates live against
     the called numbers, and a card flashes when the latest call sinks one of its
-    ships.
+    ships. A **Prizes** panel records winners (First Blood, first of each ship
+    type, All Clear); awards are made from a tracked card and only offered when
+    that card genuinely qualifies, so false claims can't be awarded.
 
 ## How it works
 
@@ -48,14 +50,6 @@ npm run typecheck  # tsc --noEmit
 mean the app runs unchanged on localhost, a GitHub Pages project path, or a custom
 domain. Routing is via query params (`?card`, `?v=play`, `?v=call`), so no SPA
 fallback is needed on static hosting.
-
-## Not yet (post-v1)
-
-- **Prize tracker** — the caller adjudicates first-ship / first-of-each-type /
-  all-clear from the live per-card status; a panel that records *who claimed which
-  prize* is the planned next step.
-- **More mobile testing** — the interactive views are responsive but want real
-  device passes (phones in hand, various sizes) before leaning on them at an event.
 
 ## Stack & credits
 
